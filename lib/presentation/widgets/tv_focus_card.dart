@@ -1,0 +1,88 @@
+// lib/presentation/widgets/tv_focus_card.dart
+// Reusable TV remote–focusable card with glow effect
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/theme/app_theme.dart';
+
+class TvFocusCard extends StatefulWidget {
+  const TvFocusCard({
+    super.key,
+    required this.onTap,
+    required this.child,
+    this.focusNode,
+    this.onFocusChange,
+    this.selected = false,
+    this.padding = const EdgeInsets.all(12),
+    this.borderRadius = 14.0,
+  });
+
+  final VoidCallback onTap;
+  final Widget child;
+  final FocusNode? focusNode;
+  final ValueChanged<bool>? onFocusChange;
+  final bool selected;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+
+  @override
+  State<TvFocusCard> createState() => _TvFocusCardState();
+}
+
+class _TvFocusCardState extends State<TvFocusCard> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = _focused || widget.selected;
+
+    return AnimatedScale(
+      scale: _focused ? 1.05 : 1.0,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeInOut,
+      child: Focus(
+        focusNode: widget.focusNode,
+        onFocusChange: (v) {
+          setState(() => _focused = v);
+          widget.onFocusChange?.call(v);
+        },
+        // রিমোটের OK/Enter/Select বাটন সরাসরি Focus উইজেটে ধরা হচ্ছে
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.select ||
+                  event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+            widget.onTap();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: widget.padding,
+            decoration: BoxDecoration(
+              color: _focused ? AppTheme.cardLight : AppTheme.card,
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              border: Border.all(
+                color: active ? AppTheme.primary : AppTheme.border,
+                width: active ? 2.5 : 1,
+              ),
+              boxShadow: _focused
+                  ? [
+                      BoxShadow(
+                        color: AppTheme.primary.withOpacity(0.4),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : [],
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}

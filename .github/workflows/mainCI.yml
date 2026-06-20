@@ -1,0 +1,126 @@
+name: 2. Flutter Android CI build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    env:
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      HMAC_SECRET_KEY: ${{ secrets.HMAC_SECRET_KEY }}
+      ENCRYPTION_KEY: ${{ secrets.HMAC_SECRET_KEY }}
+      KEYSTORE_PASSWORD: "ottking_secure_pass_2026"
+      KEY_ALIAS: "ottking_alias"
+      KEY_PASSWORD: "ottking_secure_pass_2026"
+      KEY_DN: "CN=ottking, OU=Development, O=oTtking, L=Dhaka, S=Dhaka, C=BD"
+
+    # গিটহাব রিলিজে ফাইল পুশ ও রাইট করার পারমিশন
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Android SDK and NDK packages
+        run: |
+          set -euo pipefail
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+
+          printf 'y\n' | sdkmanager --licenses >/dev/null
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;25.2.9519653"
+
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+
+      - name: Configure Flutter SDK path
+        run: |
+          FLUTTER_ROOT=$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")
+          echo "FLUTTER_ROOT=$FLUTTER_ROOT" >> "$GITHUB_ENV"
+
+      - name: Prepare icon assets
+        run: |
+          if [ -f app_assets/icon.png ]; then
+            echo "Using app_assets/icon.png"
+          else
+            echo "Missing app_assets/icon.png. Add your launcher icon to app_assets/icon.png to enable automatic icon replacement." >&2
+            exit 1
+          fi
+
+      - name: Prepare Android signing (Static Fixed Key)
+        run: |
+          set -e
+          keytool -genkeypair \
+            -v \
+            -keystore android/app/upload-keystore.jks \
+            -alias "$KEY_ALIAS" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -dname "$KEY_DN"
+
+          cat > android/app/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      # ── 🎯 সর্বোচ্চ সাইজ অপ্টিমাইজড রিলিজ বিল্ড ──
+      - name: Build Android APK
+        run: |
+          flutter build apk --release \
+            --split-per-abi \
+            --obfuscate \
+            --split-debug-info=build/app/outputs/symbols \
+            --android-skip-build-dependency-validation \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=HMAC_SECRET_KEY="$HMAC_SECRET_KEY" \
+            --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY"
+
+      # ── 📦 বিল্ড করা ছোট APK ফাইলগুলো সরাসরি রিলিজ সেকশনে পুশ ──
+      - name: Push APK to GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/flutter-apk/app-*.apk"
+          tag: "v1.0.${{ github.run_number }}"
+          name: "oTtking App Release v1.0.${{ github.run_number }}"
+          body: |
+            Automated production build for oTtking App.
+            
+            **Build Optimization Details:**
+            - **Target SDK:** Android 34
+            - **Size Reduction:** Maximum Small Size (Split APKs per ABI Enabled)
+            - **Code Obfuscation:** Enabled (`--obfuscate`)
+            - **Debug Symbols:** Stripped (`--split-debug-info`)
+          token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          draft: false
+          prerelease: false

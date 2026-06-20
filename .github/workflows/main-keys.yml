@@ -1,0 +1,47 @@
+name: Generate Keystore and Save
+on:
+  workflow_dispatch: # এটি আপনি ম্যানুয়ালি রান করবেন
+
+jobs:
+  generate_key:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # ফাইলে রাইট করার পারমিশন
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Generate Keystore File
+        run: |
+          mkdir -p keys
+          # কি-স্টোর জেনারেট করা
+          keytool -genkey -v \
+            -keystore keys/release.jks \
+            -alias ottking_alias \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "ottking_by_anirbansumon_&_im_rasel" \
+            -keypass "ottking_by_anirbansumon_&_im_rasel" \
+            -dname "CN=AnirbanSumon, OU=Dev, O=OTTking, L=Dhaka, S=Dhaka, C=BD"
+
+      - name: Convert to Base64 and Save to data.key
+        run: |
+          # JKS ফাইলকে Base64 এ কনভার্ট করে keys/data.key ফাইলে রাখা
+          base64 -w 0 keys/release.jks > keys/data.key
+          echo "Base64 generation complete."
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add keys/data.key
+          git commit -m "Add generated keystore base64 data"
+          git push

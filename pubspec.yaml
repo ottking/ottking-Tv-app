@@ -1,0 +1,37 @@
+name: ottking_app
+description: Professional Smart TV Live Streaming App — TV-only landscape UI.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2
+  http: ^1.2.2
+  crypto: ^3.0.3
+  encrypt: ^5.0.3
+  video_player: ^2.9.2
+  
+  # মিডিয়া কিটের সংস্করণ ফিক্স (একে অপরের সাথে সামঞ্জস্যপূর্ণ এবং স্টেবল)
+  media_kit_video: ^1.0.6
+  media_kit_libs_video: ^1.0.7
+  
+  device_info_plus: ^10.1.2
+  wakelock_plus: ^1.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+
+# পাব-সিস্টেমের গ্লোবাল ভার্সন ওভাররাইড লক
+dependency_overrides:
+  media_kit_libs_video: ^1.0.7
+
+flutter:
+  uses-material-design: true
