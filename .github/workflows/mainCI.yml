@@ -1,4 +1,4 @@
-name: 2. Flutter Android CI build
+name: 3.Flutter Android CI build fixed
 
 on:
   workflow_dispatch:
@@ -7,6 +7,10 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
 
+    # গিটহাব রিলিজে ফাইল পুশ ও সাইনিং কী কমিট করার পারমিশন
+    permissions:
+      contents: write
+
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
       HMAC_SECRET_KEY: ${{ secrets.HMAC_SECRET_KEY }}
@@ -14,113 +18,104 @@ jobs:
       KEYSTORE_PASSWORD: "ottking_secure_pass_2026"
       KEY_ALIAS: "ottking_alias"
       KEY_PASSWORD: "ottking_secure_pass_2026"
-      KEY_DN: "CN=ottking, OU=Development, O=oTtking, L=Dhaka, S=Dhaka, C=BD"
-
-    # গিটহাব রিলিজে ফাইল পুশ ও রাইট করার পারমিশন
-    permissions:
-      contents: write
+      KEY_DN: "CN=oTtking, OU=Dev, O=oTtking, L=Dhaka, S=Dhaka, C=BD"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+        with: { distribution: 'temurin', java-version: '17' }
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+        with: { channel: 'stable', cache: true }
 
-      - name: Install Android SDK and NDK packages
+      # ── 🔑 স্ট্যাটিক সাইনিং কী (বাগ ফিক্স) ──────────────────────────────
+      - name: Setup Static Signing Key
         run: |
           set -euo pipefail
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+          mkdir -p signing
 
-          printf 'y\n' | sdkmanager --licenses >/dev/null
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "ndk;25.2.9519653"
+          if [ ! -f signing/key.jks ]; then
+            echo "🔑 কোনো বিদ্যমান স্ট্যাটিক কী পাওয়া যায়নি — নতুন কী জেনারেট করে রিপোতে সেভ করা হচ্ছে..."
+            keytool -genkeypair -v -keystore signing/key.jks \
+              -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "$KEY_DN"
 
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Configure Flutter SDK path
-        run: |
-          FLUTTER_ROOT=$(dirname "$(dirname "$(readlink -f "$(which flutter)")")")
-          echo "FLUTTER_ROOT=$FLUTTER_ROOT" >> "$GITHUB_ENV"
+            # বাগ ফিক্স: signing/*.jks ফাইল .gitignore-এ থাকার কারণে আগে এই
+            # "git add" কোনো এরর না দিয়েই সাইলেন্টলি স্কিপ হয়ে যেত। ফলে
+            # commit/push আসলে কখনোই হতো না — প্রতিটা রানে keytool নতুন
+            # র‍্যান্ডম কী জেনারেট করত, মানে স্ট্যাটিক কী না হয়ে কার্যত
+            # "ফলব্যাক" কী দিয়ে সাইন হচ্ছিল। -f (force) দিয়ে .gitignore
+            # বাইপাস করে ফাইলটা সত্যিই স্টেজ/কমিট করা হচ্ছে।
+            git add -f signing/key.jks
 
-      - name: Prepare icon assets
-        run: |
-          if [ -f app_assets/icon.png ]; then
-            echo "Using app_assets/icon.png"
+            if git diff --cached --quiet; then
+              echo "❌ signing/key.jks স্টেজ করা যায়নি (এখনও .gitignore সমস্যা থাকতে পারে)।"
+              exit 1
+            fi
+
+            git commit -m "chore: save static signing key [skip ci]"
+            git push origin HEAD:"${GITHUB_REF_NAME}"
+            echo "✅ স্ট্যাটিক সাইনিং কী সফলভাবে রিপোতে কমিট ও পুশ হয়েছে।"
           else
-            echo "Missing app_assets/icon.png. Add your launcher icon to app_assets/icon.png to enable automatic icon replacement." >&2
-            exit 1
+            echo "✅ বিদ্যমান স্ট্যাটিক সাইনিং কী ব্যবহার হচ্ছে (signing/key.jks) — নতুন কী জেনারেট হচ্ছে না।"
           fi
 
-      - name: Prepare Android signing (Static Fixed Key)
-        run: |
-          set -e
-          keytool -genkeypair \
-            -v \
-            -keystore android/app/upload-keystore.jks \
-            -alias "$KEY_ALIAS" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -keypass "$KEY_PASSWORD" \
-            -dname "$KEY_DN"
+          echo "🔍 ভেরিফিকেশনের জন্য কী-এর ফিঙ্গারপ্রিন্ট:"
+          keytool -list -v -keystore signing/key.jks \
+            -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" \
+            | grep -E "SHA256|SHA1" || true
 
-          cat > android/app/key.properties <<EOF
-          storeFile=upload-keystore.jks
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
           storePassword=$KEYSTORE_PASSWORD
-          keyAlias=$KEY_ALIAS
           keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=../signing/key.jks
           EOF
 
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      # ── 🎨 আইকন সেটআপ (২য় কোড থেকে যুক্ত করা হলো) ──────────────────────
+      - name: Prepare icon assets
+        run: |
+          if [ -f app_assets/icon.png ]; then
+            echo "✅ app_assets/icon.png পাওয়া গেছে — লঞ্চার আইকন জেনারেট করা হবে।"
+          else
+            echo "❌ app_assets/icon.png পাওয়া যায়নি। অ্যাপের লঞ্চার আইকন সেট করতে app_assets/icon.png যুক্ত করুন।" >&2
+            exit 1
+          fi
+
       - name: Generate launcher icons
         run: dart run flutter_launcher_icons
 
-      # ── 🎯 সর্বোচ্চ সাইজ অপ্টিমাইজড রিলিজ বিল্ড ──
-      - name: Build Android APK
+      # ── 📦 রিলিজ বিল্ড ──────────────────────────────────────────────────
+      - name: Build APK
         run: |
           flutter build apk --release \
             --split-per-abi \
             --obfuscate \
             --split-debug-info=build/app/outputs/symbols \
-            --android-skip-build-dependency-validation \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=HMAC_SECRET_KEY="$HMAC_SECRET_KEY" \
             --dart-define=ENCRYPTION_KEY="$ENCRYPTION_KEY"
 
-      # ── 📦 বিল্ড করা ছোট APK ফাইলগুলো সরাসরি রিলিজ সেকশনে পুশ ──
       - name: Push APK to GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "build/app/outputs/flutter-apk/app-*.apk"
+          artifacts: "build/app/outputs/flutter-apk/*.apk"
           tag: "v1.0.${{ github.run_number }}"
           name: "oTtking App Release v1.0.${{ github.run_number }}"
-          body: |
-            Automated production build for oTtking App.
-            
-            **Build Optimization Details:**
-            - **Target SDK:** Android 34
-            - **Size Reduction:** Maximum Small Size (Split APKs per ABI Enabled)
-            - **Code Obfuscation:** Enabled (`--obfuscate`)
-            - **Debug Symbols:** Stripped (`--split-debug-info`)
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
-          draft: false
-          prerelease: false
