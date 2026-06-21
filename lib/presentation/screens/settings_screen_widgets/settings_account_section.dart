@@ -162,7 +162,7 @@ class AccountCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'প্ল্যান: ${profile.plan}',
+                      'Plan: ${profile.plan}',
                       style: const TextStyle(
                         color: Color(0xFFEAB308),
                         fontSize: 11,
@@ -199,7 +199,7 @@ class AccountCard extends StatelessWidget {
             },
             icon: const Icon(Icons.logout_rounded, size: 14),
             label: const Text(
-              'লগআউট',
+              'Logout',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
