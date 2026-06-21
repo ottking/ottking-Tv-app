@@ -63,7 +63,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
               child: Column(
                 children: [
                   const Text(
-                    'OTTking Live Tv Player', // App Name
+                    'OTTKING Live Player',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
