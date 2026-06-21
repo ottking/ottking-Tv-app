@@ -135,7 +135,7 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
             Padding(
               padding: const EdgeInsets.all(20),
               child: Text(
-                'v1.0.0  |  Smart TV',
+                'v1.0.2  |  OTTKING Smart TV',
                 style: TextStyle(
                     color: Colors.white.withOpacity(0.2), fontSize: 12),
               ),
