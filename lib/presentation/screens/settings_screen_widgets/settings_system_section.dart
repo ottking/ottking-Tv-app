@@ -229,7 +229,7 @@ class _AppInfoDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('বন্ধ', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
       ],
