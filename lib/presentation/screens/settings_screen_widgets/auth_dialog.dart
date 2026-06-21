@@ -109,7 +109,7 @@ class _AuthDialogState extends State<AuthDialog> {
                         AlwaysStoppedAnimation<Color>(Colors.white),
                   ))
               : Text(
-                  _isRegister ? 'রেজিস্ট্রেশন' : 'লগইন',
+                  _isRegister ? 'Signup' : 'Login',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.black),
                 ),
