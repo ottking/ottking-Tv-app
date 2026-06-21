@@ -65,10 +65,7 @@ class SettingsAccountSection extends StatelessWidget {
         const SizedBox(height: 16),
 
         // ── ৩. বর্তমান সেকশন হিন্ট ──────────────────────────────────────────
-        const _SectionHint(
-          icon: Icons.info_outline_rounded,
-          text: 'বর্তমানে: অ্যাকাউন্ট সেটিংস — লগইন ও সাবস্ক্রিপশন পরিচালনা করুন।',
-        ),
+        
       ],
     );
   }
