@@ -32,7 +32,7 @@ class LoadingOverlay extends StatelessWidget {
                   color: Colors.white38, size: 64),
               const SizedBox(height: 16),
               Text(
-                '$channelName is Offline,
+                '$channelName is Offline',
                 style: const TextStyle(
                     color: Colors.white60, fontSize: 18),
               ),
