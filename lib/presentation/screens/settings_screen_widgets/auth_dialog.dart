@@ -67,12 +67,7 @@ class _AuthDialogState extends State<AuthDialog> {
               autofocus: true,
               onPressed: () =>
                   setState(() => _isRegister = !_isRegister),
-              child: Text(
-                _isRegister
-                    ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? সাইন ইন করুন'
-                    : 'নতুন অ্যাকাউন্ট তৈরি করুন',
-                style: const TextStyle(color: AppTheme.primary),
-              ),
+              
             ),
             if (appState.errorMessage.isNotEmpty)
               Text(appState.errorMessage,
