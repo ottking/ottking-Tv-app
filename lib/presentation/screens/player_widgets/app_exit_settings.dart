@@ -151,7 +151,7 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
                 children: [
                   Icon(Icons.settings, color: AppTheme.primary),
                   const SizedBox(width: 10),
-                  const Text('প্লেয়ার সেটিংস', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text('Settings', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
               ),
               const Divider(color: Colors.white24, height: 25),
@@ -175,7 +175,7 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
                           child: ListTile(
                             leading: const Icon(Icons.stars_rounded, color: Color(0xFFEAB308)),
                             title: Text(widget.state.userProfile?.email ?? '', style: const TextStyle(color: Colors.white)),
-                            subtitle: Text('প্যাকেজ: ${widget.state.userProfile?.plan ?? ''}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            subtitle: Text('Packages ${widget.state.userProfile?.plan ?? ''}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
                           ),
                         ),
                       _focusableItem(
@@ -183,7 +183,7 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
                         onActivate: widget.onAppInfo,
                         child: const ListTile(
                           leading: Icon(Icons.info_outline_rounded, color: Colors.white70),
-                          title: Text('অ্যাপ তথ্য', style: TextStyle(color: Colors.white)),
+                          title: Text('App Info', style: TextStyle(color: Colors.white)),
                         ),
                       ),
                     ],
@@ -194,9 +194,9 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  _focusableItem(index: index++, onActivate: widget.onNavigateSettings, child: const Padding(padding: EdgeInsets.all(12), child: Text('সেটিংস', style: TextStyle(color: Colors.white)))),
+                  _focusableItem(index: index++, onActivate: widget.onNavigateSettings, child: const Padding(padding: EdgeInsets.all(12), child: Text('Main Settings', style: TextStyle(color: Colors.white)))),
                   const SizedBox(width: 10),
-                  _focusableItem(index: index++, onActivate: widget.onClose, child: Padding(padding: const EdgeInsets.all(12), child: Text('বন্ধ', style: TextStyle(color: AppTheme.primary)))),
+                  _focusableItem(index: index++, onActivate: widget.onClose, child: Padding(padding: const EdgeInsets.all(12), child: Text('Close', style: TextStyle(color: AppTheme.primary)))),
                 ],
               ),
             ],
