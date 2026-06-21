@@ -101,9 +101,9 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppTheme.primary, width: 1.5),
         ),
-        title: const Text('অ্যাপ থেকে বের হবেন?',
+        title: const Text('Are You Sure?',
             style: TextStyle(color: Colors.white)),
-        content: const Text('আপনি কি সম্পূর্ণ অ্যাপ বন্ধ করতে চান?',
+        content: const Text('You went Exit App?',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
