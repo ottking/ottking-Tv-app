@@ -2,8 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 
-// বাগ ফিক্স: এই প্যানেল থেকে সেটিংস বাটন সরিয়ে ফেলা হয়েছে (ইউজারের রিকোয়েস্ট
-// অনুযায়ী)। সেটিংস আইকন এখন চ্যানেল লিস্ট প্যানেলের উপরে থাকবে।
+
 class PlayerTopPanel extends StatelessWidget {
   const PlayerTopPanel({
     super.key,
@@ -17,8 +16,7 @@ class PlayerTopPanel extends StatelessWidget {
   final dynamic channel;
   final int currentIndex;
   final int totalChannels;
-  final String typedNumber; // নম্বর টাইপ হচ্ছে কিনা ট্র্যাক করার জন্য
-  final bool isPlaying;
+  final String typedNumber; 
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +24,7 @@ class PlayerTopPanel extends StatelessWidget {
 
     return Stack(
       children: [
-        // ========== TOP-LEFT: ইন্টিগ্রেটেড একক চ্যানেল প্যানেল (নম্বর + নাম একসঙ্গে) ==========
+
         Positioned(
           top: 20,
           left: 20,
@@ -103,34 +101,8 @@ class PlayerTopPanel extends StatelessWidget {
           ),
         ),
 
-        // ========== TOP-RIGHT: চ্যানেল নম্বর / মোট চ্যানেল ইনফো ব্যাজ ==========
-        Positioned(
-          top: 20,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.55),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.15)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.live_tv_rounded, color: AppTheme.primary, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  '${currentIndex + 1} / $totalChannels',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      
+       
       ],
     );
   }
