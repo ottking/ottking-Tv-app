@@ -39,11 +39,23 @@ class _AuthDialogState extends State<AuthDialog> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+
+    // ফিক্স: ইউজার যদি অলরেডি লগইন থাকে, তবে এই ডায়ালগটি দেখানোর প্রয়োজন নেই।
+    // অটো-ক্লোজ লজিক:
+    if (appState.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (Navigator.canPop(context)) Navigator.pop(context);
+      });
+      return const SizedBox.shrink(); 
+    }
+
     return AlertDialog(
       backgroundColor: const Color(0xFF131B2E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(_isRegister ? 'Register' : 'Login',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      title: Text(
+        _isRegister ? 'Register' : 'Login',
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -53,7 +65,6 @@ class _AuthDialogState extends State<AuthDialog> {
             const SizedBox(height: 16),
             _Field(ctrl: _pass, label: 'Password', icon: Icons.lock_outline, obscure: true),
             const SizedBox(height: 12),
-            // টেক্সট বাটনের কন্টেন্ট যোগ করা হলো
             TextButton(
               onPressed: () => setState(() => _isRegister = !_isRegister),
               child: Text(
@@ -71,21 +82,16 @@ class _AuthDialogState extends State<AuthDialog> {
         ),
       ),
       actions: [
-        if (appState.isAuthenticated)
-          TextButton(
-            onPressed: () {
-              appState.logout();
-              Navigator.pop(context);
-            },
-            child: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Close', style: TextStyle(color: Colors.white38)),
         ),
         FilledButton(
           onPressed: _loading ? null : () => _submit(appState),
-          style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
           child: _loading
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
               : Text(_isRegister ? 'Signup' : 'Login', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
@@ -104,17 +110,17 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // টিভির জন্য ইনপুট ফিল্ড ফোকাস করা সহজ করতে কন্টেইনার দিয়ে বর্ডার কন্ট্রোল করা হয়েছে
     return TextField(
       controller: ctrl,
       obscureText: obscure,
       style: const TextStyle(color: Colors.white),
+      // টিভির জন্য ফোকাস অপ্টিমাইজেশন
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white38),
         prefixIcon: Icon(icon, color: Colors.white38),
         enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.08))),
-        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primary)),
+        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primary, width: 2)),
       ),
     );
   }
