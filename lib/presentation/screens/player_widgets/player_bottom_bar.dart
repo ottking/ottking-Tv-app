@@ -1,5 +1,5 @@
 // lib/presentation/screens/player_widgets/player_bottom_bar.dart
-//
+
 
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
