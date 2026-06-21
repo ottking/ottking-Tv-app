@@ -20,7 +20,7 @@ class SettingsAccountSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'অ্যাকাউন্ট'),
+        const SectionHeader(title: 'Accounts'),
         const SizedBox(height: 16),
 
         // ── ১. লগইন থাকলে প্রোফাইল কার্ড (সাইজ ছোট ও কম্প্যাক্ট করা হয়েছে) ──
@@ -36,10 +36,10 @@ class SettingsAccountSection extends StatelessWidget {
               icon: appState.isAuthenticated
                   ? Icons.manage_accounts_rounded
                   : Icons.login_rounded,
-              title: appState.isAuthenticated ? 'অ্যাকাউন্ট পরিচালনা' : 'লগইন করুন',
+              title: appState.isAuthenticated ? 'Manage Account' : 'Login',
               subtitle: appState.isAuthenticated
                   ? appState.userProfile?.email ?? ''
-                  : 'প্রিমিয়াম চ্যানেল পেতে লগইন করুন',
+                  : 'Log in with a subscribed account to watch premium channels.',
               highlight: appState.isAuthenticated,
               focusNode: firstFocusNode,
               onTap: () => showDialog(
@@ -50,10 +50,10 @@ class SettingsAccountSection extends StatelessWidget {
             ),
             SettingCard(
               icon: Icons.card_membership_rounded,
-              title: 'সাবস্ক্রিপশন',
+              title: 'Subscription',
               subtitle: appState.isAuthenticated
-                  ? 'প্ল্যান: ${appState.userProfile?.plan ?? "–"}'
-                  : 'প্যাকেজ ও মূল্য দেখুন',
+                  ? 'Plan: ${appState.userProfile?.plan ?? "–"}'
+                  : 'Packages & Pricing',
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => SubscriptionDialog(plans: appState.plans),
