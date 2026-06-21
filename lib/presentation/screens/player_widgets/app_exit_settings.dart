@@ -26,22 +26,16 @@ class AppExitHandler {
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: AppTheme.primary, width: 1.5),
           ),
-          title: const Text(
-            'অ্যাপ এক্সিট করবেন?',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            'সম্পূর্ণ অ্যাপ বন্ধ করতে চান?',
-            style: TextStyle(color: Colors.white70),
-          ),
+          title: const Text('Are You sure?', style: TextStyle(color: Colors.white)),
+          content: const Text('You went to exit app?', style: TextStyle(color: Colors.white70)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('না', style: TextStyle(color: Colors.white54)),
+              child: const Text('NO', style: TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text('হ্যাঁ', style: TextStyle(color: AppTheme.primary)),
+              child: Text('YES', style: TextStyle(color: AppTheme.primary)),
             ),
           ],
         ),
@@ -66,7 +60,7 @@ class AppExitHandler {
 }
 
 /// ───────────────────────────────────────────────────────────────────────────
-/// ২. প্লেয়ার সেটিংস ডায়লগ উইজেট (Android TV Remote Optimized)
+/// ২. প্লেয়ার সেটিংস ডায়লগ উইজেট (Fixed Layout)
 /// ───────────────────────────────────────────────────────────────────────────
 class PlayerSettingsDialog extends StatefulWidget {
   const PlayerSettingsDialog({
@@ -89,23 +83,17 @@ class PlayerSettingsDialog extends StatefulWidget {
 class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
   final List<FocusNode> _focusNodes = [];
   int _focusedIndex = 0;
-  int _totalItems = 0;
+  late int _totalItems;
 
   @override
   void initState() {
     super.initState();
-    
-    _totalItems = widget.state.isAuthenticated ? 4 : 3; 
-    _totalItems += 1; // সেটিংস অ্যাকশন বাটনের জন্য
-
+    _totalItems = 4 + (widget.state.isAuthenticated ? 1 : 0);
     for (int i = 0; i < _totalItems; i++) {
       _focusNodes.add(FocusNode(debugLabel: 'settings-item-$i'));
     }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_focusNodes.isNotEmpty) {
-        _focusNodes[0].requestFocus();
-      }
+      if (_focusNodes.isNotEmpty) _focusNodes[0].requestFocus();
     });
   }
 
@@ -115,62 +103,30 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
     super.dispose();
   }
 
-  void _moveFocus(int dir) {
-    if (_focusNodes.isEmpty) return;
-    final next = (_focusedIndex + dir).clamp(0, _focusNodes.length - 1);
-    setState(() => _focusedIndex = next);
-    _focusNodes[next].requestFocus();
-  }
-
-  KeyEventResult _onKey(KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      _moveFocus(1);
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      _moveFocus(-1);
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.escape ||
-        event.logicalKey == LogicalKeyboardKey.goBack) {
-      widget.onClose();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
   Widget _focusableItem({
-    required int listIndex,
+    required int index,
     required Widget child,
     required VoidCallback onActivate,
   }) {
-    final isFocused = _focusedIndex == listIndex;
+    final isFocused = _focusedIndex == index;
     return Focus(
-      focusNode: _focusNodes[listIndex],
-      onFocusChange: (v) {
-        if (v) setState(() => _focusedIndex = listIndex);
-      },
+      focusNode: _focusNodes[index],
+      onFocusChange: (v) { if (v) setState(() => _focusedIndex = index); },
       onKeyEvent: (_, e) {
-        if (e is KeyDownEvent &&
-            (e.logicalKey == LogicalKeyboardKey.enter ||
-                e.logicalKey == LogicalKeyboardKey.select)) {
+        if (e is KeyDownEvent && (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.select)) {
           onActivate();
           return KeyEventResult.handled;
         }
-        return _onKey(e);
+        return KeyEventResult.ignored;
       },
-      child: GestureDetector(
+      child: InkWell(
         onTap: onActivate,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
           decoration: BoxDecoration(
-            color: isFocused ? AppTheme.primary.withOpacity(0.15) : Colors.transparent,
+            color: isFocused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isFocused ? AppTheme.primary : Colors.transparent,
-              width: 1.5,
-            ),
+            border: Border.all(color: isFocused ? AppTheme.primary : Colors.transparent, width: 1.5),
           ),
           child: child,
         ),
@@ -180,92 +136,73 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final state = widget.state;
-    int currentVisualIndex = 0; 
-
-    return AlertDialog(
+    int index = 0;
+    return Dialog(
       backgroundColor: Colors.black.withOpacity(0.95),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppTheme.primary, width: 1.5),
-      ),
-      title: const Row(
-        children: [
-          Icon(Icons.settings, color: Colors.white),
-          Spacer(),
-          Text('প্লেয়ার সেটিংস', style: TextStyle(color: Colors.white)),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _focusableItem(
-            listIndex: currentVisualIndex++,
-            onActivate: () => state.togglePlayerBoot(),
-            child: SwitchListTile(
-              title: const Text('Boot Player (অটো প্লেয়ার)', style: TextStyle(color: Colors.white)),
-              subtitle: Text(
-                'অ্যাপ চালু হলে সরাসরি লাইভ টিভি ওপেন হবে',
-                style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: AppTheme.primary, width: 1.5)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.settings, color: AppTheme.primary),
+                  const SizedBox(width: 10),
+                  const Text('প্লেয়ার সেটিংস', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                ],
               ),
-              activeColor: AppTheme.primary,
-              value: state.isPlayerBootEnabled,
-              onChanged: (v) => state.togglePlayerBoot(),
-            ),
-          ),
-
-          if (state.isAuthenticated)
-            _focusableItem(
-              listIndex: currentVisualIndex++,
-              onActivate: () {},
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: ListTile(
-                  leading: const Icon(Icons.stars_rounded, color: Color(0xFFEAB308)),
-                  title: Text(
-                    state.userProfile?.email ?? '',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  subtitle: Text(
-                    'প্যাকেজ: ${state.userProfile?.plan ?? ''}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+              const Divider(color: Colors.white24, height: 25),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _focusableItem(
+                        index: index++,
+                        onActivate: () => widget.state.togglePlayerBoot(),
+                        child: SwitchListTile(
+                          title: const Text('Boot Player', style: TextStyle(color: Colors.white)),
+                          value: widget.state.isPlayerBootEnabled,
+                          onChanged: (_) => widget.state.togglePlayerBoot(),
+                        ),
+                      ),
+                      if (widget.state.isAuthenticated)
+                        _focusableItem(
+                          index: index++,
+                          onActivate: () {},
+                          child: ListTile(
+                            leading: const Icon(Icons.stars_rounded, color: Color(0xFFEAB308)),
+                            title: Text(widget.state.userProfile?.email ?? '', style: const TextStyle(color: Colors.white)),
+                            subtitle: Text('প্যাকেজ: ${widget.state.userProfile?.plan ?? ''}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                          ),
+                        ),
+                      _focusableItem(
+                        index: index++,
+                        onActivate: widget.onAppInfo,
+                        child: const ListTile(
+                          leading: Icon(Icons.info_outline_rounded, color: Colors.white70),
+                          title: Text('অ্যাপ তথ্য', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-
-          const Divider(color: Colors.white12, height: 20),
-
-          _focusableItem(
-            listIndex: currentVisualIndex++,
-            onActivate: widget.onAppInfo,
-            child: ListTile(
-              leading: const Icon(Icons.info_outline_rounded, color: AppTheme.primary),
-              title: const Text('অ্যাপ তথ্য (App Info)', style: TextStyle(color: Colors.white)),
-              subtitle: const Text('ভার্সন ও ডেভেলপার তথ্য',
-                  style: TextStyle(color: Colors.white54, fontSize: 12)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white38),
-            ),
+              const Divider(color: Colors.white24, height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _focusableItem(index: index++, onActivate: widget.onNavigateSettings, child: const Padding(padding: EdgeInsets.all(12), child: Text('সেটিংস', style: TextStyle(color: Colors.white)))),
+                  const SizedBox(width: 10),
+                  _focusableItem(index: index++, onActivate: widget.onClose, child: Padding(padding: const EdgeInsets.all(12), child: Text('বন্ধ', style: TextStyle(color: AppTheme.primary)))),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-      actions: [
-        _focusableItem(
-          listIndex: currentVisualIndex++,
-          onActivate: widget.onNavigateSettings,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Text(
-              'সেটিংস', 
-              style: TextStyle(color: _focusedIndex == (currentVisualIndex - 1) ? Colors.white : Colors.white54),
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: widget.onClose,
-          child: Text('বন্ধ', style: TextStyle(color: AppTheme.primary)),
-        ),
-      ],
     );
   }
 }
