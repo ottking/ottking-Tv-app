@@ -97,7 +97,6 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
   }
 }
 
-// ── Nav Item (ফিক্সড ফোকাস লজিক) ──
 class _NavItem extends StatefulWidget {
   const _NavItem({
     required this.focusNode,
@@ -145,41 +144,47 @@ class _NavItemState extends State<_NavItem> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Focus(
-        focusNode: widget.focusNode,
-        onKeyEvent: (_, event) {
-          if (event is KeyDownEvent && (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.select)) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-          if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            widget.onMoveRight?.call();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
+      child: GestureDetector(
+        onTap: () {
+          widget.focusNode.requestFocus();
+          widget.onTap();
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: isFocused ? AppTheme.primary.withOpacity(0.2) : (widget.isActive ? AppTheme.primary.withOpacity(0.1) : Colors.transparent),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: active ? AppTheme.primary : Colors.transparent, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Icon(widget.icon, color: active ? AppTheme.primary : Colors.white38, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.label, style: TextStyle(color: active ? Colors.white : Colors.white54, fontSize: 14, fontWeight: FontWeight.w700)),
-                    Text(widget.hint, style: const TextStyle(color: Colors.white30, fontSize: 11)),
-                  ],
+        child: Focus(
+          focusNode: widget.focusNode,
+          onKeyEvent: (_, event) {
+            if (event is KeyDownEvent && (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.select)) {
+              widget.onTap();
+              return KeyEventResult.handled;
+            }
+            if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              widget.onMoveRight?.call();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isFocused ? AppTheme.primary.withOpacity(0.2) : (widget.isActive ? AppTheme.primary.withOpacity(0.1) : Colors.transparent),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: active ? AppTheme.primary : Colors.transparent, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Icon(widget.icon, color: active ? AppTheme.primary : Colors.white38, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.label, style: TextStyle(color: active ? Colors.white : Colors.white54, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text(widget.hint, style: const TextStyle(color: Colors.white30, fontSize: 11)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -187,7 +192,6 @@ class _NavItemState extends State<_NavItem> {
   }
 }
 
-// ── Back Button (সহজ সংস্করণ) ──
 class _BackButton extends StatelessWidget {
   const _BackButton({required this.focusNode, required this.onTap, this.onKeyEvent});
   final FocusNode focusNode;
