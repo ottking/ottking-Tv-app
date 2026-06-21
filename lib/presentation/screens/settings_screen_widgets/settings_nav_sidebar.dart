@@ -39,10 +39,10 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
       hint: 'Login/Subscriptions',
     ),
     _NavMeta(
-      icon: Icons.tv_rounded,
-      label: 'TV Settings',
-      hint: 'Boot Player & More,
-    ),
+  icon: Icons.tv_rounded,
+  label: 'TV Settings',
+  hint: 'Boot Player & More', // এখানে শেষে একটি ' ব্যবহার করুন
+),
     _NavMeta(
       icon: Icons.settings_applications_rounded,
       label: 'Systems',
