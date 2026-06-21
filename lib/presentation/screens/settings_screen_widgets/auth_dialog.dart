@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
 
@@ -43,36 +42,31 @@ class _AuthDialogState extends State<AuthDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF131B2E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(
-        _isRegister ? 'Register' : 'Login',
-        style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.bold),
-      ),
+      title: Text(_isRegister ? 'Register' : 'Login',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: 400,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _Field(
-                ctrl: _email, label: 'Email', icon: Icons.email_outlined),
+            _Field(ctrl: _email, label: 'Email', icon: Icons.email_outlined),
             const SizedBox(height: 16),
-            _Field(
-              ctrl: _pass,
-              label: 'Password',
-              icon: Icons.lock_outline,
-              obscure: true,
-            ),
+            _Field(ctrl: _pass, label: 'Password', icon: Icons.lock_outline, obscure: true),
             const SizedBox(height: 12),
+            // টেক্সট বাটনের কন্টেন্ট যোগ করা হলো
             TextButton(
-              autofocus: true,
-              onPressed: () =>
-                  setState(() => _isRegister = !_isRegister),
-              
+              onPressed: () => setState(() => _isRegister = !_isRegister),
+              child: Text(
+                _isRegister ? 'Already have an account? Login' : 'Need an account? Register',
+                style: TextStyle(color: AppTheme.primary),
+              ),
             ),
             if (appState.errorMessage.isNotEmpty)
-              Text(appState.errorMessage,
-                  style: const TextStyle(
-                      color: Colors.redAccent, fontSize: 13)),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(appState.errorMessage,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+              ),
           ],
         ),
       ),
@@ -83,36 +77,18 @@ class _AuthDialogState extends State<AuthDialog> {
               appState.logout();
               Navigator.pop(context);
             },
-            child: const Text('Logout',
-                style: TextStyle(
-                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            child: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close',
-              style: TextStyle(color: Colors.white38)),
+          child: const Text('Close', style: TextStyle(color: Colors.white38)),
         ),
         FilledButton(
           onPressed: _loading ? null : () => _submit(appState),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
-          ),
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
           child: _loading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
-                  ))
-              : Text(
-                  _isRegister ? 'Signup' : 'Login',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black),
-                ),
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+              : Text(_isRegister ? 'Signup' : 'Login', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         ),
       ],
     );
@@ -120,12 +96,7 @@ class _AuthDialogState extends State<AuthDialog> {
 }
 
 class _Field extends StatelessWidget {
-  const _Field({
-    required this.ctrl,
-    required this.label,
-    required this.icon,
-    this.obscure = false,
-  });
+  const _Field({required this.ctrl, required this.label, required this.icon, this.obscure = false});
   final TextEditingController ctrl;
   final String label;
   final IconData icon;
@@ -133,6 +104,7 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // টিভির জন্য ইনপুট ফিল্ড ফোকাস করা সহজ করতে কন্টেইনার দিয়ে বর্ডার কন্ট্রোল করা হয়েছে
     return TextField(
       controller: ctrl,
       obscureText: obscure,
@@ -141,11 +113,8 @@ class _Field extends StatelessWidget {
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white38),
         prefixIcon: Icon(icon, color: Colors.white38),
-        enabledBorder: UnderlineInputBorder(
-            borderSide:
-                BorderSide(color: Colors.white.withOpacity(0.08))),
-        focusedBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: AppTheme.primary)),
+        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.08))),
+        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primary)),
       ),
     );
   }
