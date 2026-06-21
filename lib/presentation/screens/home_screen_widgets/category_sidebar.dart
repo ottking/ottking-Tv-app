@@ -30,7 +30,7 @@ class CategorySidebar extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(left: 4, bottom: 12, top: 8),
           child: Text(
-            '🔥 CATEGORIES',
+            'CATEGORIES',
             style: TextStyle(
               color: Colors.white38,
               fontSize: 11,
