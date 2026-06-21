@@ -15,7 +15,7 @@ class SettingsSystemSection extends StatelessWidget {
     appState.loadCatalog();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('চ্যানেল লিস্ট আপডেট হচ্ছে...'),
+        content: const Text('Updating...'),
         backgroundColor: AppTheme.card,
         duration: const Duration(seconds: 2),
       ),
@@ -25,7 +25,7 @@ class SettingsSystemSection extends StatelessWidget {
   void _checkForUpdates(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('নতুন আপডেটের জন্য চেক করা হচ্ছে...'),
+        content: const Text('Next Updates to add this feature'),
         backgroundColor: AppTheme.card,
         duration: const Duration(seconds: 2),
       ),
@@ -37,7 +37,7 @@ class SettingsSystemSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'সিস্টেম'),
+        const SectionHeader(title: 'System Settings'),
         const SizedBox(height: 16),
 
         // ── প্রথম লাইন (কার্ড ১ এবং কার্ড ২) ──────────────────────────────────
