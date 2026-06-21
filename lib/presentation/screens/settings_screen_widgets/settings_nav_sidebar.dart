@@ -259,7 +259,7 @@ class _NavItemState extends State<_NavItem> {
             widget.onTap();
             return KeyEventResult.handled;
           }
-        ।
+        
           if (event is KeyDownEvent &&
               event.logicalKey == LogicalKeyboardKey.arrowRight) {
             widget.onMoveRight?.call();
