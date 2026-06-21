@@ -44,7 +44,7 @@ class _AuthDialogState extends State<AuthDialog> {
       backgroundColor: const Color(0xFF131B2E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        _isRegister ? 'নতুন অ্যাকাউন্ট' : 'সাইন ইন',
+        _isRegister ? 'Register' : 'Login',
         style: const TextStyle(
             color: Colors.white, fontWeight: FontWeight.bold),
       ),
