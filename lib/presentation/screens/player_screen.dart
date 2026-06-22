@@ -492,12 +492,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       if (!_showChannelList) {
         if (event.logicalKey == LogicalKeyboardKey.channelUp || event.logicalKey == LogicalKeyboardKey.pageUp || event.logicalKey == LogicalKeyboardKey.arrowUp) { _switchChannel(-1); return; }
         if (event.logicalKey == LogicalKeyboardKey.channelDown || event.logicalKey == LogicalKeyboardKey.pageDown || event.logicalKey == LogicalKeyboardKey.arrowDown) { _switchChannel(1); return; }
-        // বাগ ফিক্স/ফিচার: প্লে-পজ ও সেটিংস বাটন সরিয়ে → (right arrow) চাপলে
-        // সরাসরি চ্যানেল লিস্ট খোলার ব্যবস্থা করা হলো
-        if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-          setState(() { _showChannelList = true; _showControls = true; });
-          return;
-        }
       }
 
       if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.space) {
@@ -603,6 +597,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     channel: ch,
                     currentIndex: _appState!.currentChannelIndex,
                     totalChannels: _appState!.channels.length,
+                    onSettings: _openSettings,
                     typedNumber: _typed,
                   ),
 
@@ -611,6 +606,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     ctrl: _nativeCtrl ?? native_vp.VideoPlayerController.networkUrl(Uri.parse('')),
                     isLive: isLive,
                     liveBlink: _liveBlink,
+                    onPlayPause: _togglePlayPause,
+                    onExit: _invokeExitWidget,
+                    onChannelUp: () => _switchChannel(-1),
+                    onChannelDown: () => _switchChannel(1),
                   ),
 
                 if (_showChannelList)
@@ -626,11 +625,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                       setState(() => _showChannelList = false);
                       // প্যানেল বন্ধ হলে player root focus ফেরত
                       _focus.requestFocus();
-                    },
-                    // বাগ ফিক্স/ফিচার: সেটিংস বাটন এখন চ্যানেল লিস্টের উপরে
-                    onSettings: () {
-                      setState(() => _showChannelList = false);
-                      _openSettings();
                     },
                   ),
               ],
