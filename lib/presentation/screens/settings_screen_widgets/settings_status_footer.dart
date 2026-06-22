@@ -21,7 +21,7 @@ class SettingsStatusFooter extends StatelessWidget {
         children: [
           _Badge(
             icon: Icons.connected_tv_rounded,
-            label: 'Smart TV',
+            label: 'Smart TV Mode',
             color: AppTheme.primary,
           ),
           const SizedBox(width: 24),
@@ -30,8 +30,8 @@ class SettingsStatusFooter extends StatelessWidget {
                 ? Icons.cloud_done_rounded
                 : Icons.warning_amber_rounded,
             label: appState.errorMessage.isEmpty
-                ? 'API Connected'
-                : 'API Faild',
+                ? 'API সংযোগ সচল'
+                : 'API সমস্যা',
             color: appState.errorMessage.isEmpty
                 ? AppTheme.primary
                 : Colors.redAccent,
@@ -39,7 +39,7 @@ class SettingsStatusFooter extends StatelessWidget {
           const SizedBox(width: 24),
           _Badge(
             icon: Icons.live_tv_rounded,
-            label: '${appState.channels.length} Channels',
+            label: '${appState.channels.length} চ্যানেল',
             color: Colors.white54,
           ),
         ],

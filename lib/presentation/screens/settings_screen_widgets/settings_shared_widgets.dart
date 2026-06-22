@@ -62,7 +62,6 @@ class SettingCard extends StatefulWidget {
     required this.onTap,
     this.trailing,
     this.highlight = false,
-    this.focusNode,
   });
   final IconData icon;
   final String title;
@@ -70,7 +69,6 @@ class SettingCard extends StatefulWidget {
   final VoidCallback onTap;
   final Widget? trailing;
   final bool highlight;
-  final FocusNode? focusNode;
 
   @override
   State<SettingCard> createState() => _SettingCardState();
@@ -83,7 +81,6 @@ class _SettingCardState extends State<SettingCard> {
   Widget build(BuildContext context) {
     final active = _focused || widget.highlight;
     return Focus(
-      focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onKeyEvent: (_, e) {
         if (e is KeyDownEvent &&

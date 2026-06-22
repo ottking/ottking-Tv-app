@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
 
@@ -39,62 +40,84 @@ class _AuthDialogState extends State<AuthDialog> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-
-    // ফিক্স: ইউজার যদি অলরেডি লগইন থাকে, তবে এই ডায়ালগটি দেখানোর প্রয়োজন নেই।
-    // অটো-ক্লোজ লজিক:
-    if (appState.isAuthenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Navigator.canPop(context)) Navigator.pop(context);
-      });
-      return const SizedBox.shrink(); 
-    }
-
     return AlertDialog(
       backgroundColor: const Color(0xFF131B2E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        _isRegister ? 'Register' : 'Login',
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        _isRegister ? 'নতুন অ্যাকাউন্ট' : 'সাইন ইন',
+        style: const TextStyle(
+            color: Colors.white, fontWeight: FontWeight.bold),
       ),
       content: SizedBox(
         width: 400,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _Field(ctrl: _email, label: 'Email', icon: Icons.email_outlined),
+            _Field(
+                ctrl: _email, label: 'Email', icon: Icons.email_outlined),
             const SizedBox(height: 16),
-            _Field(ctrl: _pass, label: 'Password', icon: Icons.lock_outline, obscure: true),
+            _Field(
+              ctrl: _pass,
+              label: 'Password',
+              icon: Icons.lock_outline,
+              obscure: true,
+            ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () => setState(() => _isRegister = !_isRegister),
+              autofocus: true,
+              onPressed: () =>
+                  setState(() => _isRegister = !_isRegister),
               child: Text(
-                _isRegister ? 'Already have an account? Login' : 'Need an account? Register',
-                style: TextStyle(color: AppTheme.primary),
+                _isRegister
+                    ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? সাইন ইন করুন'
+                    : 'নতুন অ্যাকাউন্ট তৈরি করুন',
+                style: const TextStyle(color: AppTheme.primary),
               ),
             ),
             if (appState.errorMessage.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(appState.errorMessage,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
-              ),
+              Text(appState.errorMessage,
+                  style: const TextStyle(
+                      color: Colors.redAccent, fontSize: 13)),
           ],
         ),
       ),
       actions: [
+        if (appState.isAuthenticated)
+          TextButton(
+            onPressed: () {
+              appState.logout();
+              Navigator.pop(context);
+            },
+            child: const Text('লগআউট',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close', style: TextStyle(color: Colors.white38)),
+          child: const Text('বাতিল',
+              style: TextStyle(color: Colors.white38)),
         ),
         FilledButton(
           onPressed: _loading ? null : () => _submit(appState),
           style: FilledButton.styleFrom(
             backgroundColor: AppTheme.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
           ),
           child: _loading
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-              : Text(_isRegister ? 'Signup' : 'Login', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.white),
+                  ))
+              : Text(
+                  _isRegister ? 'রেজিস্ট্রেশন' : 'লগইন',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black),
+                ),
         ),
       ],
     );
@@ -102,7 +125,12 @@ class _AuthDialogState extends State<AuthDialog> {
 }
 
 class _Field extends StatelessWidget {
-  const _Field({required this.ctrl, required this.label, required this.icon, this.obscure = false});
+  const _Field({
+    required this.ctrl,
+    required this.label,
+    required this.icon,
+    this.obscure = false,
+  });
   final TextEditingController ctrl;
   final String label;
   final IconData icon;
@@ -114,13 +142,15 @@ class _Field extends StatelessWidget {
       controller: ctrl,
       obscureText: obscure,
       style: const TextStyle(color: Colors.white),
-      // টিভির জন্য ফোকাস অপ্টিমাইজেশন
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white38),
         prefixIcon: Icon(icon, color: Colors.white38),
-        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white.withOpacity(0.08))),
-        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primary, width: 2)),
+        enabledBorder: UnderlineInputBorder(
+            borderSide:
+                BorderSide(color: Colors.white.withOpacity(0.08))),
+        focusedBorder: const UnderlineInputBorder(
+            borderSide: BorderSide(color: AppTheme.primary)),
       ),
     );
   }

@@ -10,16 +10,12 @@ class ChannelListPanel extends StatefulWidget {
     required this.currentIndex,
     required this.onSelect,
     required this.onClose,
-    required this.onSettings,
   });
 
   final List channels;
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback onClose;
-  // বাগ ফিক্স: প্লেয়ার স্ক্রিন থেকে সেটিংস বাটন সরিয়ে এখানে চ্যানেল লিস্টের
-  // উপরে আনা হয়েছে (ইউজারের রিকোয়েস্ট অনুযায়ী)।
-  final VoidCallback onSettings;
 
   @override
   State<ChannelListPanel> createState() => _ChannelListPanelState();
@@ -29,7 +25,6 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
   final ScrollController _scrollController = ScrollController();
   late final List<FocusNode> _itemNodes;
   final FocusNode _closeBtnNode = FocusNode(debugLabel: 'ch-list-close');
-  final FocusNode _settingsBtnNode = FocusNode(debugLabel: 'ch-list-settings');
 
   @override
   void initState() {
@@ -65,7 +60,6 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
   void dispose() {
     _scrollController.dispose();
     _closeBtnNode.dispose();
-    _settingsBtnNode.dispose();
     for (final n in _itemNodes) {
       n.dispose();
     }
@@ -88,66 +82,28 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
         ),
         child: Column(
           children: [
-            // ── Header (সেটিংস আইকন + টাইটেল + ক্লোজ বাটন) ─────────────────
+            // ── Header ─────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  // ── সেটিংস আইকন — চ্যানেল লিস্টের উপরে ───────────────────
-                  _HeaderIconButton(
-                    focusNode: _settingsBtnNode,
-                    icon: Icons.settings_rounded,
-                    tooltip: 'সেটিংস',
-                    onTap: widget.onSettings,
-                    onKeyEvent: (event) {
-                      if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                      if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-                        _closeBtnNode.requestFocus();
-                        return KeyEventResult.handled;
-                      }
-                      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                        if (_itemNodes.isNotEmpty) _itemNodes[0].requestFocus();
-                        return KeyEventResult.handled;
-                      }
-                      return KeyEventResult.ignored;
-                    },
-                  ),
-                  const SizedBox(width: 8),
                   const Icon(Icons.list_rounded, color: AppTheme.primary, size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'চ্যানেল লিস্ট',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                  const Text(
+                    'চ্যানেল লিস্ট',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
+                  const Spacer(),
                   // ── Close button — ফোকাসযোগ্য ─────────────────
-                  _HeaderIconButton(
+                  _CloseFocusButton(
                     focusNode: _closeBtnNode,
-                    icon: Icons.close,
-                    tooltip: 'বন্ধ করুন',
-                    onTap: widget.onClose,
-                    onKeyEvent: (event) {
-                      if (event is! KeyDownEvent) return KeyEventResult.ignored;
-                      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                        _settingsBtnNode.requestFocus();
-                        return KeyEventResult.handled;
-                      }
-                      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                        if (_itemNodes.isNotEmpty) _itemNodes[0].requestFocus();
-                        return KeyEventResult.handled;
-                      }
-                      if (event.logicalKey == LogicalKeyboardKey.escape ||
-                          event.logicalKey == LogicalKeyboardKey.goBack) {
-                        widget.onClose();
-                        return KeyEventResult.handled;
-                      }
-                      return KeyEventResult.ignored;
+                    onClose: widget.onClose,
+                    onDown: () {
+                      if (_itemNodes.isNotEmpty) _itemNodes[0].requestFocus();
                     },
                   ),
                 ],
@@ -156,42 +112,35 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
 
             // ── Channel List ────────────────────────────────────────
             Expanded(
-              child: widget.channels.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'কোনো চ্যানেল পাওয়া যায়নি',
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      itemCount: widget.channels.length,
-                      itemBuilder: (ctx, i) {
-                        final ch = widget.channels[i];
-                        final isActive = i == widget.currentIndex;
-                        if (i >= _itemNodes.length) return const SizedBox.shrink();
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: widget.channels.length,
+                itemBuilder: (ctx, i) {
+                  final ch = widget.channels[i];
+                  final isActive = i == widget.currentIndex;
+                  if (i >= _itemNodes.length) return const SizedBox.shrink();
 
-                        return _ChannelListItem(
-                          focusNode: _itemNodes[i],
-                          index: i,
-                          channelName: ch.name,
-                          isActive: isActive,
-                          onSelect: () => widget.onSelect(i),
-                          onClose: widget.onClose,
-                          // প্রথম আইটেম থেকে ↑ গেলে close বাটনে
-                          onKeyEvent: i == 0
-                              ? (event) {
-                                  if (event is KeyDownEvent &&
-                                      event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                                    _closeBtnNode.requestFocus();
-                                    return KeyEventResult.handled;
-                                  }
-                                  return KeyEventResult.ignored;
-                                }
-                              : null,
-                        );
-                      },
-                    ),
+                  return _ChannelListItem(
+                    focusNode: _itemNodes[i],
+                    index: i,
+                    channelName: ch.name,
+                    isActive: isActive,
+                    onSelect: () => widget.onSelect(i),
+                    onClose: widget.onClose,
+                    // প্রথম আইটেম থেকে ↑ গেলে close বাটনে
+                    onKeyEvent: i == 0
+                        ? (event) {
+                            if (event is KeyDownEvent &&
+                                event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                              _closeBtnNode.requestFocus();
+                              return KeyEventResult.handled;
+                            }
+                            return KeyEventResult.ignored;
+                          }
+                        : null,
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -200,63 +149,63 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
   }
 }
 
-// ── Header Icon Button (সেটিংস / ক্লোজ — দুটোতেই ব্যবহৃত) ─────────────────────
-class _HeaderIconButton extends StatefulWidget {
-  const _HeaderIconButton({
+// ── Close Button ─────────────────────────────────────────────────────────────
+class _CloseFocusButton extends StatefulWidget {
+  const _CloseFocusButton({
     required this.focusNode,
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    this.onKeyEvent,
+    required this.onClose,
+    this.onDown,
   });
   final FocusNode focusNode;
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final KeyEventResult Function(KeyEvent)? onKeyEvent;
+  final VoidCallback onClose;
+  final VoidCallback? onDown;
 
   @override
-  State<_HeaderIconButton> createState() => _HeaderIconButtonState();
+  State<_CloseFocusButton> createState() => _CloseFocusButtonState();
 }
 
-class _HeaderIconButtonState extends State<_HeaderIconButton> {
+class _CloseFocusButtonState extends State<_CloseFocusButton> {
   bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: widget.tooltip,
-      child: Focus(
-        focusNode: widget.focusNode,
-        onFocusChange: (v) => setState(() => _focused = v),
-        onKeyEvent: (_, event) {
-          if (event is! KeyDownEvent) return KeyEventResult.ignored;
-          if (event.logicalKey == LogicalKeyboardKey.enter ||
-              event.logicalKey == LogicalKeyboardKey.select ||
-              event.logicalKey == LogicalKeyboardKey.numpadEnter) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-          return widget.onKeyEvent?.call(event) ?? KeyEventResult.ignored;
-        },
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: _focused ? AppTheme.primary : Colors.transparent,
-              ),
-            ),
-            child: Icon(
-              widget.icon,
-              color: _focused ? AppTheme.primary : Colors.white38,
-              size: 18,
-            ),
+    return Focus(
+      focusNode: widget.focusNode,
+      onFocusChange: (v) => setState(() => _focused = v),
+      onKeyEvent: (_, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.select) {
+          widget.onClose();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          widget.onDown?.call();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.goBack) {
+          widget.onClose();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: _focused ? AppTheme.primary : Colors.transparent,
           ),
+        ),
+        child: IconButton(
+          icon: Icon(
+            Icons.close,
+            color: _focused ? AppTheme.primary : Colors.white38,
+            size: 18,
+          ),
+          onPressed: widget.onClose,
         ),
       ),
     );

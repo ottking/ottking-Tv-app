@@ -7,15 +7,14 @@ import '../../providers/app_state.dart';
 import 'settings_shared_widgets.dart';
 
 class SettingsSystemSection extends StatelessWidget {
-  const SettingsSystemSection({super.key, required this.appState, this.firstFocusNode});
+  const SettingsSystemSection({super.key, required this.appState});
   final AppState appState;
-  final FocusNode? firstFocusNode;
 
   void _refreshCatalog(BuildContext context) {
     appState.loadCatalog();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Updating...'),
+        content: const Text('চ্যানেল লিস্ট আপডেট হচ্ছে...'),
         backgroundColor: AppTheme.card,
         duration: const Duration(seconds: 2),
       ),
@@ -25,7 +24,7 @@ class SettingsSystemSection extends StatelessWidget {
   void _checkForUpdates(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Next Updates to add this feature'),
+        content: const Text('নতুন আপডেটের জন্য চেক করা হচ্ছে...'),
         backgroundColor: AppTheme.card,
         duration: const Duration(seconds: 2),
       ),
@@ -37,7 +36,7 @@ class SettingsSystemSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'System Settings'),
+        const SectionHeader(title: 'সিস্টেম'),
         const SizedBox(height: 16),
 
         // ── প্রথম লাইন (কার্ড ১ এবং কার্ড ২) ──────────────────────────────────
@@ -46,17 +45,16 @@ class SettingsSystemSection extends StatelessWidget {
             // ── ১. ক্যাটালগ রিফ্রেশ ──────────────────────────────────────────
             SettingCard(
               icon: Icons.sync_rounded,
-              title: 'Reload Api',
-              subtitle: 'Fetch all Api Response',
-              focusNode: firstFocusNode,
+              title: 'ক্যাটালগ রিফ্রেশ',
+              subtitle: 'চ্যানেল লিস্ট আপডেট করুন',
               onTap: () => _refreshCatalog(context),
             ),
 
             // ── ২. অ্যাপ আপডেট ────────────────────────────────────────────
             SettingCard(
               icon: Icons.system_update_rounded,
-              title: 'Updates',
-              subtitle: 'Upcoming new versions',
+              title: 'অ্যাপ আপডেট',
+              subtitle: 'নতুন ভার্সন চেক করুন',
               onTap: () => _checkForUpdates(context),
             ),
           ],
@@ -70,8 +68,8 @@ class SettingsSystemSection extends StatelessWidget {
             // ── ৩. ডেভেলপার ────────────────────────────────────────────────
             SettingCard(
               icon: Icons.code_rounded,
-              title: 'Developers',
-              subtitle: 'Developers info',
+              title: 'ডেভেলপার',
+              subtitle: 'Anirban Sumon',
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => const _DeveloperDialog(),
@@ -81,8 +79,8 @@ class SettingsSystemSection extends StatelessWidget {
             // ── ৪. অ্যাপ তথ্য ──────────────────────────────────────────────
             SettingCard(
               icon: Icons.info_outline_rounded,
-              title: 'App',
-              subtitle: 'App info',
+              title: 'অ্যাপ তথ্য',
+              subtitle: 'ভার্সন ও সিস্টেম তথ্য',
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => const _AppInfoDialog(),
@@ -120,7 +118,7 @@ class _DeveloperDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Developers:',
+            'প্রধান ডেভেলপার ও প্রজেক্ট আর্কিটেক্ট:',
             style: TextStyle(color: Colors.white54, fontSize: 13),
           ),
           const SizedBox(height: 6),
@@ -159,7 +157,7 @@ class _DeveloperDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('close', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('বন্ধ', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -184,14 +182,14 @@ class _AppInfoDialog extends StatelessWidget {
         children: [
           Icon(Icons.info_rounded, color: AppTheme.primary),
           SizedBox(width: 10),
-          Text('App Info', style: TextStyle(color: Colors.white)),
+          Text('অ্যাপ তথ্য', style: TextStyle(color: Colors.white)),
         ],
       ),
       content: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'OTTking',
+            'Live TV Player',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -229,7 +227,7 @@ class _AppInfoDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('বন্ধ', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
       ],

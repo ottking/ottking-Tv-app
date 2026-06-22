@@ -77,47 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (event is! KeyDownEvent) return;
     if (event.logicalKey == LogicalKeyboardKey.escape ||
         event.logicalKey == LogicalKeyboardKey.goBack) {
-      // বাগ ফিক্স: আগে এখানে ব্যাক/এসকেপ চাপলেই সরাসরি পুরো অ্যাপ ক্লোজ হয়ে
-      // যেত (SystemNavigator.pop), এমনকি ইউজার যখন চ্যানেল গ্রিড থেকে কেবল
-      // ক্যাটাগরি সাইডবারে ফিরে যেতে চাইতো তখনও। এখন আগে চেক করা হচ্ছে বর্তমান
-      // ফোকাস চ্যানেল গ্রিডে আছে কিনা — থাকলে শুধু সাইডবারে ফোকাস ফিরিয়ে দেওয়া
-      // হবে, অ্যাপ বন্ধ হবে না।
-      final current = FocusManager.instance.primaryFocus;
-      if (current != null && _chNodes.contains(current)) {
-        _moveFocusToSidebar();
-        return;
-      }
-      // অন্য কোথাও (সাইডবার/সেটিংস বাটনে) থাকলেই কেবল এক্সিট কনফার্মেশন দেখানো হবে
-      _confirmExit();
-    }
-  }
-
-  Future<void> _confirmExit() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.black.withOpacity(0.95),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppTheme.primary, width: 1.5),
-        ),
-        title: const Text('Are You Sure?',
-            style: TextStyle(color: Colors.white)),
-        content: const Text('You went Exit App?',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('NO', style: TextStyle(color: Colors.white54)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('YES', style: TextStyle(color: AppTheme.primary)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
       SystemChannels.platform.invokeMethod('SystemNavigator.pop');
     }
   }

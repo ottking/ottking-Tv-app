@@ -43,7 +43,7 @@ class _ChannelGridState extends State<ChannelGrid> {
           child: Row(
             children: [
               Text(
-                '${widget.categoryName} CHANNELS',
+                '📺 ${widget.categoryName} CHANNELS',
                 style: const TextStyle(
                   color: Colors.white38,
                   fontSize: 11,
@@ -76,7 +76,7 @@ class _ChannelGridState extends State<ChannelGrid> {
           child: widget.channels.isEmpty
               ? const Center(
                   child: Text(
-                    'No channels available',
+                    'কোনো চ্যানেল পাওয়া যায়নি',
                     style: TextStyle(color: Colors.white38, fontSize: 16),
                   ),
                 )
@@ -105,15 +105,9 @@ class _ChannelGridState extends State<ChannelGrid> {
                         if (hasFocus) {
                           // ফোকাস হলে গ্রিড আইটেম স্ক্রিনে দৃশ্যমান করা
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            // বাগ ফিক্স: ক্যাটাগরি দ্রুত পরিবর্তন হলে এই কলব্যাক
-                            // ফায়ার হওয়ার আগেই chNodes লিস্ট ক্লিয়ার/ছোট হয়ে
-                            // যেতে পারে — তখন chNodes[i] অ্যাক্সেস করলে RangeError
-                            // থ্রো হয়ে অ্যাপ ক্র্যাশ করত। এখন বাউন্ডস চেক করা হলো।
-                            if (i >= widget.chNodes.length) return;
-                            final node = widget.chNodes[i];
-                            if (node.context != null) {
+                            if (widget.chNodes[i].context != null) {
                               Scrollable.ensureVisible(
-                                node.context!,
+                                widget.chNodes[i].context!,
                                 duration: const Duration(milliseconds: 250),
                                 alignment: 0.5,
                               );
@@ -160,7 +154,7 @@ class ChannelCard extends StatelessWidget {
             child: channel.logoUrl.trim().isNotEmpty
                 ? Image.network(
                     channel.logoUrl.trim(),
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     width: double.infinity,
                     height: double.infinity,
                     loadingBuilder: (ctx, child, prog) =>

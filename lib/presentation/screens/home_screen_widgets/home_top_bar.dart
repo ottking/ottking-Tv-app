@@ -89,7 +89,7 @@ class HomeTopBar extends StatelessWidget {
                     color: AppTheme.primary, size: 16),
                 const SizedBox(width: 6),
                 Text(
-                  '${appState.channels.length} Channels',
+                  '${appState.channels.length} চ্যানেল',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
@@ -130,7 +130,7 @@ class _TvSettingsButtonState extends State<_TvSettingsButton> {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Settings',
+      message: 'সেটিংস',
       child: Focus(
         focusNode: widget.focusNode,
         onFocusChange: (v) => setState(() => _focused = v),
