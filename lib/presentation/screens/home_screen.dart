@@ -94,6 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _requestCategoryFocus(int index) {
+    if (_catNodes.length > index && mounted) {
+      _catNodes[index].requestFocus();
+    }
+  }
+
   /// সাইডবার থেকে → চাপলে চ্যানেল গ্রিডের প্রথম আইটেমে সরাসরি ফোকাস
   void _moveFocusToGrid() {
     if (_chNodes.isNotEmpty) {

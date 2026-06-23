@@ -430,6 +430,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           _showChannelList = true;
           _showControls = true;
         });
+        return;
       }
     }
   }

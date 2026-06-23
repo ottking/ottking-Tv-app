@@ -327,6 +327,10 @@ class _ChannelListItemState extends State<_ChannelListItem> {
             event.logicalKey == LogicalKeyboardKey.select ||
             event.logicalKey == LogicalKeyboardKey.numpadEnter) {
           widget.onSelect();
+          // Auto-close on select
+          Future.delayed(const Duration(milliseconds: 100), () {
+            widget.onClose();
+          });
           return KeyEventResult.handled;
         }
         // Back/Escape → প্যানেল বন্ধ
@@ -339,7 +343,13 @@ class _ChannelListItemState extends State<_ChannelListItem> {
         return widget.onKeyEvent?.call(event) ?? KeyEventResult.ignored;
       },
       child: GestureDetector(
-        onTap: widget.onSelect,
+        onTap: () {
+          widget.onSelect();
+          // Auto-close on tap
+          Future.delayed(const Duration(milliseconds: 100), () {
+            widget.onClose();
+          });
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

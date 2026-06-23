@@ -65,6 +65,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).pop();
   }
 
+  void _selectSection(int index) {
+    setState(() => _activeSection = _Section.values[index]);
+    // Restore focus to first nav item to maintain focus hierarchy
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _firstSidebarNode.requestFocus();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -87,9 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: SettingsNavSidebar(
                   activeSection: _activeSection.index,
                   firstFocusNode: _firstSidebarNode,
-                  onSelect: (i) {
-                    setState(() => _activeSection = _Section.values[i]);
-                  },
+                  onSelect: _selectSection,
                   onBack: _safelyPop,
                 ),
               ),
