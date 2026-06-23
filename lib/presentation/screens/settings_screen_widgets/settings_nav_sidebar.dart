@@ -60,13 +60,13 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
 
   @override
   void dispose() {
-    _backNode.dispose();
+    if (!_backNode.disposed) _backNode.dispose();
     // প্রথম নোডটি বাইরে থেকে এলে dispose করব না
-    if (widget.firstFocusNode == null) {
+    if (widget.firstFocusNode == null && !_nodes[0].disposed) {
       _nodes[0].dispose();
     }
-    _nodes[1].dispose();
-    _nodes[2].dispose();
+    if (!_nodes[1].disposed) _nodes[1].dispose();
+    if (!_nodes[2].disposed) _nodes[2].dispose();
     super.dispose();
   }
 

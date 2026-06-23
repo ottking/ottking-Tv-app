@@ -47,9 +47,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _rootFocusNode.dispose();
-    _firstSidebarNode.dispose();
+    if (!_rootFocusNode.disposed) _rootFocusNode.dispose();
+    if (!_firstSidebarNode.disposed) _firstSidebarNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    // Restore focus to first sidebar item when returning to settings
+    if (mounted && !_firstSidebarNode.disposed) {
+      _firstSidebarNode.requestFocus();
+    }
   }
 
   void _handleKey(KeyEvent event) {
@@ -65,13 +74,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.of(context).pop();
   }
 
+  void _requestSidebarFocus() {
+    if (mounted && !_firstSidebarNode.disposed) {
+      _firstSidebarNode.requestFocus();
+    }
+  }
+
   void _selectSection(int index) {
     setState(() => _activeSection = _Section.values[index]);
     // Restore focus to first nav item to maintain focus hierarchy
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _firstSidebarNode.requestFocus();
-      }
+      _requestSidebarFocus();
     });
   }
 

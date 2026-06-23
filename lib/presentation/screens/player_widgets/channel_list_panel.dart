@@ -61,9 +61,9 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
   @override
   void dispose() {
     _scrollController.dispose();
-    _closeBtnNode.dispose();
+    if (!_closeBtnNode.disposed) _closeBtnNode.dispose();
     for (final n in _itemNodes) {
-      n.dispose();
+      if (!n.disposed) n.dispose();
     }
     super.dispose();
   }

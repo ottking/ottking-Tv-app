@@ -42,20 +42,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _rootFocusNode.dispose();
-    _settingsFocusNode.dispose();
+    if (!_rootFocusNode.disposed) _rootFocusNode.dispose();
+    if (!_settingsFocusNode.disposed) _settingsFocusNode.dispose();
     _clearCatNodes();
     _clearChNodes();
     super.dispose();
   }
 
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    // Restore focus to settings button when returning from player/settings
+    if (mounted && !_settingsFocusNode.disposed) {
+      _settingsFocusNode.requestFocus();
+    }
+  }
+
   void _clearCatNodes() {
-    for (final n in _catNodes) n.dispose();
+    for (final n in _catNodes) {
+      if (!n.disposed) n.dispose();
+    }
     _catNodes.clear();
   }
 
   void _clearChNodes() {
-    for (final n in _chNodes) n.dispose();
+    for (final n in _chNodes) {
+      if (!n.disposed) n.dispose();
+    }
     _chNodes.clear();
   }
 
@@ -81,6 +94,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _requestSettingsFocus() {
+    if (mounted && !_settingsFocusNode.disposed) {
+      _settingsFocusNode.requestFocus();
+    }
+  }
+
+  void _requestCategoryFocus(int index) {
+    if (_catNodes.length > index && mounted && !_catNodes[index].disposed) {
+      _catNodes[index].requestFocus();
+    }
+  }
+
+  void _requestGridFocus(int index) {
+    if (_chNodes.length > index && mounted && !_chNodes[index].disposed) {
+      _chNodes[index].requestFocus();
+    }
+  }
+
   void _changeCategory(int index) {
     if (_selectedCategoryIndex == index) return;
     setState(() {
@@ -88,38 +119,31 @@ class _HomeScreenState extends State<HomeScreen> {
       _clearChNodes();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_catNodes.length > index && mounted) {
-        _catNodes[index].requestFocus();
-      }
+      _requestCategoryFocus(index);
     });
   }
 
   void _requestCategoryFocus(int index) {
-    if (_catNodes.length > index && mounted) {
+    if (_catNodes.length > index && mounted && !_catNodes[index].disposed) {
       _catNodes[index].requestFocus();
     }
   }
 
-  /// সাইডবার থেকে → চাপলে চ্যানেল গ্রিডের প্রথম আইটেমে সরাসরি ফোকাস
   void _moveFocusToGrid() {
-    if (_chNodes.isNotEmpty) {
-      _chNodes[0].requestFocus();
-    }
+    _requestGridFocus(0);
   }
 
   /// চ্যানেল গ্রিড থেকে ← চাপলে কারেন্ট ক্যাটাগরিতে ফোকাস
   void _moveFocusToSidebar() {
-    if (_catNodes.length > _selectedCategoryIndex) {
-      _catNodes[_selectedCategoryIndex].requestFocus();
-    }
+    _requestCategoryFocus(_selectedCategoryIndex);
   }
 
   /// সেটিংস বাটন থেকে ↓ চাপলে প্রথম ক্যাটাগরিতে ফোকাস
   void _moveFocusFromSettingsToSidebar() {
-    if (_catNodes.isNotEmpty) {
-      _catNodes[_selectedCategoryIndex].requestFocus();
-    }
+    _requestCategoryFocus(_selectedCategoryIndex);
   }
+
+  void _oldMoveFocusToGrid() {
 
   @override
   Widget build(BuildContext context) {

@@ -281,6 +281,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }
   }
 
+  void _requestFocus() {
+    if (mounted && !_focus.disposed) {
+      _focus.requestFocus();
+    }
+  }
+
   void _switchChannel(int direction) async {
     if (_appState == null) return;
     _retryTimer?.cancel();
@@ -347,8 +353,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         ),
       ),
     ).then((_) {
-      _focus.requestFocus(); 
-      _startControlsTimer();
+      // Restore focus safely after dialog closes
+      if (mounted && !_focus.disposed) {
+        _focus.requestFocus(); 
+        _startControlsTimer();
+      }
     });
   }
 
@@ -356,7 +365,13 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     showDialog(
       context: context,
       builder: (_) => const AppInfoDialog(),
-    ).then((_) { _focus.requestFocus(); _startControlsTimer(); });
+    ).then((_) { 
+      // Restore focus safely after dialog closes
+      if (mounted && !_focus.disposed) {
+        _focus.requestFocus(); 
+        _startControlsTimer();
+      }
+    });
   }
 
   Future<void> _invokeExitWidget() async {
@@ -439,9 +454,18 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _prepareForExitRelease();
-    _focus.dispose();
+    if (!_focus.disposed) _focus.dispose();
     HttpOverrides.global = null;
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    // Focus restored when returning to player from other screens
+    if (mounted && !_focus.disposed) {
+      _focus.requestFocus();
+    }
   }
 
   @override
@@ -515,12 +539,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     onSelect: (i) {
                       setState(() => _showChannelList = false);
                       _switchToIndex(i);
-                      _focus.requestFocus();
+                      _requestFocus();
                     },
                     onClose: () {
                       setState(() => _showChannelList = false);
                       // প্যানেল বন্ধ হলে player root focus ফেরত
-                      _focus.requestFocus();
+                      _requestFocus();
                     },
                   ),
               ],
