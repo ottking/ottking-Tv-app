@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/tv_focus.dart';
 import 'settings_shared_widgets.dart';
 import 'auth_dialog.dart';
 import 'subscription_dialog.dart';
@@ -39,11 +40,26 @@ class SettingsAccountSection extends StatelessWidget {
                   ? appState.userProfile?.email ?? ''
                   : 'প্রিমিয়াম চ্যানেল পেতে লগইন করুন',
               highlight: appState.isAuthenticated,
-              onTap: () => showDialog(
-                context: context,
-                barrierDismissible: false, // রিমোট ইউজারদের জন্য নিরাপদ পপ-আপ কন্ট্রোল
-                builder: (_) => const AuthDialog(),
-              ),
+              onTap: () {
+                if (appState.isAuthenticated && appState.userProfile != null) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AccountInfoDialog(
+                      profile: appState.userProfile!,
+                      onLogout: () {
+                        appState.logout();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  );
+                } else {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const AuthDialog(),
+                  );
+                }
+              },
             ),
             SettingCard(
               icon: Icons.card_membership_rounded,
@@ -177,35 +193,124 @@ class AccountCard extends StatelessWidget {
           ),
           
           // টিভি রিমোটের জন্য ফোকাস-অ্যাওয়ার লগআউট বাটন
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ).copyWith(
-              // রিমোট দিয়ে বাটনে আসলে ব্যাকগ্রাউন্ড লালচে হাইলাইট হবে
-              overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                (Set<WidgetState> states) {
-                  if (states.contains(WidgetState.focused)) {
-                    return Colors.red.withOpacity(0.15);
-                  }
-                  return null;
-                },
-              ),
-            ),
-            onPressed: () {
-              // সেটিংস স্ক্রিন পপ না করে শুধুমাত্র স্টেট লগআউট করা হলো
+          TvFocus(
+            onActivate: () {
               appState.logout();
             },
-            icon: const Icon(Icons.logout_rounded, size: 14),
-            label: const Text(
-              'লগআউট',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            builder: (context, focused) => TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ).copyWith(
+                // রিমোট দিয়ে বাটনে আসলে ব্যাকগ্রাউন্ড লালচে হাইলাইট হবে
+                overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.focused)) {
+                      return Colors.red.withOpacity(0.15);
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              onPressed: () {
+                appState.logout();
+              },
+              icon: const Icon(Icons.logout_rounded, size: 14),
+              label: const Text(
+                'লগআউট',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class AccountInfoDialog extends StatelessWidget {
+  const AccountInfoDialog({
+    super.key,
+    required this.profile,
+    required this.onLogout,
+  });
+
+  final dynamic profile;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF131B2E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text(
+        'অ্যাকাউন্ট তথ্য',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AccountInfoRow(label: 'ইমেইল', value: profile.email),
+            const SizedBox(height: 12),
+            _AccountInfoRow(label: 'প্ল্যান', value: profile.plan),
+            const SizedBox(height: 12),
+            _AccountInfoRow(label: 'স্ট্যাটাস', value: 'Logged in'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('বাতিল', style: TextStyle(color: Colors.white38)),
+        ),
+        TvFocus(
+          onActivate: onLogout,
+          builder: (context, focused) => FilledButton(
+            onPressed: onLogout,
+            style: FilledButton.styleFrom(
+              backgroundColor: focused ? Colors.redAccent : AppTheme.primary,
+            ),
+            child: const Text('লগআউট', style: TextStyle(color: Colors.white)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountInfoRow extends StatelessWidget {
+  const _AccountInfoRow({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            '$label:',
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
