@@ -123,6 +123,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _requestCategoryFocus(int index) {
+    if (_catNodes.length > index && mounted && !_catNodes[index].disposed) {
+      _catNodes[index].requestFocus();
+    }
+  }
+
   void _moveFocusToGrid() {
     _requestGridFocus(0);
   }
@@ -136,6 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _moveFocusFromSettingsToSidebar() {
     _requestCategoryFocus(_selectedCategoryIndex);
   }
+
+  void _oldMoveFocusToGrid() {
 
   @override
   Widget build(BuildContext context) {

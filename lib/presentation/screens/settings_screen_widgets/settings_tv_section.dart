@@ -6,25 +6,13 @@ import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
 import 'settings_shared_widgets.dart';
 
-/// TV section এ ১টি মাত্র card — first == last
 class SettingsTvSection extends StatelessWidget {
-  const SettingsTvSection({
-    super.key,
-    required this.appState,
-    this.firstFocusNode,
-    this.lastFocusNode,   // screen থেকে আসে, এখানে firstFocusNode == lastFocusNode
-    this.onNavigateLeft,
-    this.onLastItemDown,
-  });
-
+  const SettingsTvSection({super.key, required this.appState});
   final AppState appState;
-  final FocusNode? firstFocusNode;
-  final FocusNode? lastFocusNode;
-  final VoidCallback? onNavigateLeft;
-  final VoidCallback? onLastItemDown;
 
   @override
   Widget build(BuildContext context) {
+    // প্লেয়ার স্ক্রিনের মেথড ও স্টেট নেমিং কনভেনশনের সাথে ১০০% সিঙ্ক করা হলো
     final isBootEnabled = appState.isPlayerBootEnabled;
 
     return Column(
@@ -35,22 +23,19 @@ class SettingsTvSection extends StatelessWidget {
 
         SettingsTwoColRow(
           children: [
-            // first == last, তাই isLastItem: true
+            // ── Boot Player toggle ─────────────────────────────────────────
             SettingCard(
-              focusNode: firstFocusNode,
-              isLastItem: true,
-              onLastItemDown: onLastItemDown,
-              onNavigateLeft: onNavigateLeft,
               icon: Icons.rocket_launch_rounded,
               title: 'Boot Player (Auto Player)',
               subtitle: isBootEnabled
                   ? 'On — App will start live TV automatically'
                   : 'Off — Will go to home page',
               highlight: isBootEnabled,
+              // টিভি রিমোটের ফোকাস যেন কনফ্লিক্ট না করে, তাই সুইচের onChanged ডিরেক্ট কার্ডের টগলে পাস করা হলো
               trailing: Switch(
                 value: isBootEnabled,
                 activeColor: AppTheme.primary,
-                onChanged: null,
+                onChanged: null, // null রাখলে ফোকাস সরাসরি মাদার 'SettingCard' রিসিভ করবে, যা টিভির জন্য আইডিয়াল
               ),
               onTap: () => appState.togglePlayerBoot(),
             ),
@@ -58,6 +43,8 @@ class SettingsTvSection extends StatelessWidget {
         ),
 
         const SizedBox(height: 16),
+
+        // ── Right panel hint ───────────────────────────────────────────────
         _BootHintCard(enabled: isBootEnabled),
       ],
     );
@@ -87,9 +74,7 @@ class _BootHintCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            enabled
-                ? Icons.check_circle_rounded
-                : Icons.info_outline_rounded,
+            enabled ? Icons.check_circle_rounded : Icons.info_outline_rounded,
             color: enabled ? AppTheme.primary : Colors.white38,
             size: 20,
           ),
@@ -110,7 +95,7 @@ class _BootHintCard extends StatelessWidget {
                 Text(
                   enabled
                       ? 'Boot Player is ON. The Live TV player will launch automatically on app startup.'
-                      : 'Boot Player is OFF. The home page will open first on app startup.',
+    : 'Boot Player is OFF. The home page will open first on app startup.',
                   style: const TextStyle(color: Colors.white38, fontSize: 12),
                 ),
               ],

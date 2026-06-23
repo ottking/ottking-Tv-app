@@ -1,4 +1,5 @@
 // lib/presentation/screens/settings_screen_widgets/settings_shared_widgets.dart
+// সব settings section এ ব্যবহার হওয়া shared widget গুলো
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/tv_focus.dart';
 
+/// Section শিরোনাম
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title});
   final String title;
@@ -15,14 +17,16 @@ class SectionHeader extends StatelessWidget {
     return Text(
       title.toUpperCase(),
       style: const TextStyle(
-          color: AppTheme.primary,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5),
+        color: AppTheme.primary,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+      ),
     );
   }
 }
 
+/// ২ কলামের row (বা ১টি হলে stretched)
 class SettingsTwoColRow extends StatelessWidget {
   const SettingsTwoColRow({super.key, required this.children});
   final List<Widget> children;
@@ -30,7 +34,10 @@ class SettingsTwoColRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (children.length == 1) {
-      return SizedBox(height: 76, child: children.first);
+      return SizedBox(
+        height: 76,
+        child: children.first,
+      );
     }
     return SizedBox(
       height: 76,
@@ -47,19 +54,6 @@ class SettingsTwoColRow extends StatelessWidget {
 }
 
 /// Focusable setting card
-///
-/// [focusNode]      — inject করা হলে সেটা ব্যবহার হয় (first/last node)
-/// [isLastItem]     — true হলে ↓ চাপলে [onLastItemDown] call হয় (যদি [onMoveDown] না দেওয়া হয়)
-/// [onNavigateLeft] — ← চাপলে sidebar এ ফেরত (যদি [onMoveLeft] না দেওয়া হয়)
-/// [onLastItemDown] — last item এ ↓ চাপলে sidebar এ wrap
-/// [onMoveRight]    — → চাপলে কাস্টম নেভিগেশন (যেমন: একই row এর পাশের card এ ফোকাস)
-/// [onMoveDown]     — ↓ চাপলে কাস্টম নেভিগেশন (যেমন: নিচের row এর card এ ফোকাস)
-/// [onMoveUp]       — ↑ চাপলে কাস্টম নেভিগেশন (যেমন: উপরের row এর card এ ফোকাস)
-/// [onMoveLeft]     — ← চাপলে কাস্টম নেভিগেশন; দেওয়া না হলে [onNavigateLeft] ব্যবহার হবে
-///
-/// গুরুত্বপূর্ণ: একটি গ্রিডে ২টির বেশি card থাকলে (যেমন ২x২ লেআউট) প্রতিটি card এর
-/// জন্য [onMoveRight]/[onMoveDown]/[onMoveUp] ঠিকভাবে wire করতে হবে — নাহলে arrow
-/// key চাপলে কোনো handler না পেয়ে ফোকাস "হারিয়ে যাওয়ার" মতো (কোনো প্রতিক্রিয়া না হওয়া) অনুভূত হয়।
 class SettingCard extends StatefulWidget {
   const SettingCard({
     super.key,
@@ -67,32 +61,15 @@ class SettingCard extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.focusNode,
     this.trailing,
     this.highlight = false,
-    this.onNavigateLeft,
-    this.isLastItem = false,
-    this.onLastItemDown,
-    this.onMoveRight,
-    this.onMoveDown,
-    this.onMoveUp,
-    this.onMoveLeft,
   });
-
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final FocusNode? focusNode;
   final Widget? trailing;
   final bool highlight;
-  final VoidCallback? onNavigateLeft;
-  final bool isLastItem;
-  final VoidCallback? onLastItemDown;
-  final VoidCallback? onMoveRight;
-  final VoidCallback? onMoveDown;
-  final VoidCallback? onMoveUp;
-  final VoidCallback? onMoveLeft;
 
   @override
   State<SettingCard> createState() => _SettingCardState();
@@ -104,49 +81,9 @@ class _SettingCardState extends State<SettingCard> {
   @override
   Widget build(BuildContext context) {
     final active = _focused || widget.highlight;
-
     return TvFocus(
-      focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onActivate: widget.onTap,
-      onKeyEvent: (event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
-        // ← কাস্টম হ্যান্ডলার থাকলে সেটা, নাহলে sidebar এ ফেরত (ডিফল্ট আচরণ)
-        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          if (widget.onMoveLeft != null) {
-            widget.onMoveLeft!.call();
-          } else {
-            widget.onNavigateLeft?.call();
-          }
-          return KeyEventResult.handled;
-        }
-        // → পাশের card এ ফোকাস (একই row)
-        if (event.logicalKey == LogicalKeyboardKey.arrowRight &&
-            widget.onMoveRight != null) {
-          widget.onMoveRight!.call();
-          return KeyEventResult.handled;
-        }
-        // ↑ উপরের row এর card এ ফোকাস
-        if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
-            widget.onMoveUp != null) {
-          widget.onMoveUp!.call();
-          return KeyEventResult.handled;
-        }
-        // ↓ নিচের row এর card এ ফোকাস (কাস্টম), নাহলে last item হলে sidebar এ wrap
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          if (widget.onMoveDown != null) {
-            widget.onMoveDown!.call();
-            return KeyEventResult.handled;
-          }
-          if (widget.isLastItem) {
-            widget.onLastItemDown?.call();
-            return KeyEventResult.handled;
-          }
-        }
-
-        return KeyEventResult.ignored;
-      },
       builder: (context, focused) => GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(

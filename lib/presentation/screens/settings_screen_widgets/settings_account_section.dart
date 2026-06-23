@@ -1,8 +1,7 @@
 // lib/presentation/screens/settings_screen_widgets/settings_account_section.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; 
 
 import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
@@ -11,67 +10,38 @@ import 'settings_shared_widgets.dart';
 import 'auth_dialog.dart';
 import 'subscription_dialog.dart';
 
-/// Account section focus order:
-///   card1 (Sign In / Manage) → card2 (Subscription) → logout btn [if logged in]
-///
-/// last item:
-///   - লগইন থাকলে → logout btn (lastFocusNode)
-///   - লগইন না থাকলে → card2 (lastFocusNode)
 class SettingsAccountSection extends StatelessWidget {
-  const SettingsAccountSection({
-    super.key,
-    required this.appState,
-    this.firstFocusNode,
-    this.lastFocusNode,
-    this.onNavigateLeft,
-    this.onLastItemDown,
-  });
-
+  const SettingsAccountSection({super.key, required this.appState});
   final AppState appState;
-  final FocusNode? firstFocusNode;
-  final FocusNode? lastFocusNode;
-  final VoidCallback? onNavigateLeft;
-  final VoidCallback? onLastItemDown;
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn =
-        appState.isAuthenticated && appState.userProfile != null;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(title: 'ACCOUNTS'),
         const SizedBox(height: 16),
 
-        if (isLoggedIn) ...[
-          AccountCard(
-            profile: appState.userProfile!,
-            // logout btn হলো last item যখন logged in
-            logoutFocusNode: lastFocusNode,
-            onLastItemDown: onLastItemDown,
-            onNavigateLeft: onNavigateLeft,
-          ),
+        // ── ১. লগইন থাকলে প্রোফাইল কার্ড (সাইজ ছোট ও কম্প্যাক্ট করা হয়েছে) ──
+        if (appState.isAuthenticated && appState.userProfile != null) ...[
+          AccountCard(profile: appState.userProfile!),
           const SizedBox(height: 16),
         ],
 
+        // ── ২. অ্যাকশন কার্ড জোন: লগইন এবং সাবস্ক্রিপশন ───────────────────────
         SettingsTwoColRow(
           children: [
-            // card1 → always first
             SettingCard(
-              focusNode: firstFocusNode,
-              onNavigateLeft: onNavigateLeft,
-              icon: isLoggedIn
+              icon: appState.isAuthenticated
                   ? Icons.manage_accounts_rounded
                   : Icons.login_rounded,
-              title: isLoggedIn ? 'Account Management' : 'Sign In',
-              subtitle: isLoggedIn
+              title: appState.isAuthenticated ? 'Account Management' : 'Sign In',
+              subtitle: appState.isAuthenticated
                   ? appState.userProfile?.email ?? ''
                   : 'Sign in to access premium channels',
-              highlight: isLoggedIn,
-              // logged out এর সময় card2 নেই তাই card1 = last? No, card2 সবসময় আছে
+              highlight: appState.isAuthenticated,
               onTap: () {
-                if (isLoggedIn) {
+                if (appState.isAuthenticated && appState.userProfile != null) {
                   showDialog(
                     context: context,
                     builder: (_) => AccountInfoDialog(
@@ -91,28 +61,23 @@ class SettingsAccountSection extends StatelessWidget {
                 }
               },
             ),
-
-            // card2 → last item যখন NOT logged in
             SettingCard(
-              focusNode: isLoggedIn ? null : lastFocusNode,
-              isLastItem: !isLoggedIn,
-              onLastItemDown: isLoggedIn ? null : onLastItemDown,
-              onNavigateLeft: onNavigateLeft,
               icon: Icons.card_membership_rounded,
               title: 'SUBSCRIPTION',
-              subtitle: isLoggedIn
+              subtitle: appState.isAuthenticated
                   ? 'Plan: ${appState.userProfile?.plan ?? "–"}'
                   : 'View packages and prices',
               onTap: () => showDialog(
                 context: context,
-                builder: (_) =>
-                    SubscriptionDialog(plans: appState.plans),
+                builder: (_) => SubscriptionDialog(plans: appState.plans),
               ),
             ),
           ],
         ),
 
         const SizedBox(height: 16),
+
+        // ── ৩. বর্তমান সেকশন হিন্ট ──────────────────────────────────────────
         const _SectionHint(
           icon: Icons.info_outline_rounded,
           text: 'Current: Account Settings — Manage login and subscription.',
@@ -141,8 +106,10 @@ class _SectionHint extends StatelessWidget {
           Icon(icon, color: AppTheme.primary, size: 16),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text,
-                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -150,25 +117,18 @@ class _SectionHint extends StatelessWidget {
   }
 }
 
-// ── Account Card (logout button = last focusable item when logged in) ─────────
+// ── ৪. কম্প্যাক্ট অ্যাকাউন্ট প্রোফাইল কার্ড (টিভি রিমোট অপ্টিমাইজড) ──────────────────
+
 class AccountCard extends StatelessWidget {
-  const AccountCard({
-    super.key,
-    required this.profile,
-    this.logoutFocusNode,
-    this.onLastItemDown,
-    this.onNavigateLeft,
-  });
+  const AccountCard({super.key, required this.profile});
   final dynamic profile;
-  final FocusNode? logoutFocusNode;
-  final VoidCallback? onLastItemDown;
-  final VoidCallback? onNavigateLeft;
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.read<AppState>();
-
+    final appState = context.read<AppState>(); 
+    
     return Container(
+      // প্যাডিং কমিয়ে কার্ডটি অনেক ছোট এবং প্রফেশনাল করা হয়েছে
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -181,15 +141,17 @@ class AccountCard extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // ছোট সাইজের প্রোফাইল অবতার
           CircleAvatar(
             radius: 20,
             backgroundColor: AppTheme.primary.withOpacity(0.12),
             child: Text(
               profile.email.isNotEmpty ? profile.email[0].toUpperCase() : '?',
               style: const TextStyle(
-                  color: AppTheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16),
+                color: AppTheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -197,62 +159,69 @@ class AccountCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(profile.email,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  profile.email,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 2),
-                Row(children: [
-                  const Icon(Icons.stars_rounded,
-                      color: Color(0xFFEAB308), size: 12),
-                  const SizedBox(width: 4),
-                  Text('Plan: ${profile.plan}',
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.stars_rounded,
+                      color: Color(0xFFEAB308),
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Plan: ${profile.plan}',
                       style: const TextStyle(
-                          color: Color(0xFFEAB308),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ]),
+                        color: Color(0xFFEAB308),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-
-          // Logout button — last focusable item (logged in state)
+          
+          // টিভি রিমোটের জন্য ফোকাস-অ্যাওয়ার লগআউট বাটন
           TvFocus(
-            focusNode: logoutFocusNode,
-            onActivate: () => appState.logout(),
-            // ↓ Down চাপলে sidebar এ wrap, ← Left চাপলে sidebar এ ফেরত
-            onKeyEvent: (event) {
-              if (event is! KeyDownEvent) return KeyEventResult.ignored;
-              if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                onLastItemDown?.call();
-                return KeyEventResult.handled;
-              }
-              if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-                onNavigateLeft?.call();
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
+            onActivate: () {
+              appState.logout();
             },
             builder: (context, focused) => TextButton.icon(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.redAccent,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ).copyWith(
+                // রিমোট দিয়ে বাটনে আসলে ব্যাকগ্রাউন্ড লালচে হাইলাইট হবে
                 overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                  (states) => states.contains(WidgetState.focused)
-                      ? Colors.red.withOpacity(0.15)
-                      : null,
+                  (Set<WidgetState> states) {
+                    if (states.contains(WidgetState.focused)) {
+                      return Colors.red.withOpacity(0.15);
+                    }
+                    return null;
+                  },
                 ),
               ),
-              onPressed: () => appState.logout(),
+              onPressed: () {
+                appState.logout();
+              },
               icon: const Icon(Icons.logout_rounded, size: 14),
-              label: const Text('Logout',
-                  style:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              label: const Text(
+                'Logout',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
             ),
           ),
         ],
@@ -262,8 +231,12 @@ class AccountCard extends StatelessWidget {
 }
 
 class AccountInfoDialog extends StatelessWidget {
-  const AccountInfoDialog(
-      {super.key, required this.profile, required this.onLogout});
+  const AccountInfoDialog({
+    super.key,
+    required this.profile,
+    required this.onLogout,
+  });
+
   final dynamic profile;
   final VoidCallback onLogout;
 
@@ -271,11 +244,11 @@ class AccountInfoDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF131B2E),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Account Information',
-          style:
-              TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text(
+        'Account Information',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
       content: SizedBox(
         width: 360,
         child: Column(
@@ -286,26 +259,23 @@ class AccountInfoDialog extends StatelessWidget {
             const SizedBox(height: 12),
             _AccountInfoRow(label: 'Plan', value: profile.plan),
             const SizedBox(height: 12),
-            const _AccountInfoRow(label: 'Status', value: 'Logged in'),
+            _AccountInfoRow(label: 'Status', value: 'Logged in'),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child:
-              const Text('Cancel', style: TextStyle(color: Colors.white38)),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
         ),
         TvFocus(
           onActivate: onLogout,
           builder: (context, focused) => FilledButton(
             onPressed: onLogout,
             style: FilledButton.styleFrom(
-              backgroundColor:
-                  focused ? Colors.redAccent : AppTheme.primary,
+              backgroundColor: focused ? Colors.redAccent : AppTheme.primary,
             ),
-            child: const Text('Logout',
-                style: TextStyle(color: Colors.white)),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
         ),
       ],
@@ -325,15 +295,20 @@ class _AccountInfoRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 80,
-          child: Text('$label:',
-              style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          child: Text(
+            '$label:',
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          ),
         ),
         Expanded(
-          child: Text(value,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600)),
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );
