@@ -125,30 +125,30 @@ class _PlayerTopPanelState extends State<PlayerTopPanel> {
           child: TvFocus(
             focusNode: _settingsFocus,
             onActivate: widget.onSettings,
-            builder: (ctx, focused) => GestureDetector(
-                  onTap: widget.onSettings,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: focused
-                          ? AppTheme.primary.withOpacity(0.25)
-                          : Colors.black.withOpacity(0.55),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: focused ? AppTheme.primary : Colors.white.withOpacity(0.15),
-                        width: focused ? 2 : 1,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.settings_rounded,
-                      color: focused ? AppTheme.primary : Colors.white70,
-                      size: 26,
+            builder: (ctx, focused) {
+              return GestureDetector(
+                onTap: widget.onSettings,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: focused
+                        ? AppTheme.primary.withOpacity(0.25)
+                        : Colors.black.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: focused ? AppTheme.primary : Colors.white.withOpacity(0.15),
+                      width: focused ? 2 : 1,
                     ),
                   ),
-                );
-              },
-            ),
+                  child: Icon(
+                    Icons.settings_rounded,
+                    color: focused ? AppTheme.primary : Colors.white70,
+                    size: 26,
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],
