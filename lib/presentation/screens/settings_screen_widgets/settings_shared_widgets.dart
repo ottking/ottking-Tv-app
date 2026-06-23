@@ -1,5 +1,4 @@
 // lib/presentation/screens/settings_screen_widgets/settings_shared_widgets.dart
-// সব settings section এ ব্যবহার হওয়া shared widget গুলো
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +6,6 @@ import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/tv_focus.dart';
 
-/// Section শিরোনাম
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title});
   final String title;
@@ -17,16 +15,14 @@ class SectionHeader extends StatelessWidget {
     return Text(
       title.toUpperCase(),
       style: const TextStyle(
-        color: AppTheme.primary,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.5,
-      ),
+          color: AppTheme.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5),
     );
   }
 }
 
-/// ২ কলামের row (বা ১টি হলে stretched)
 class SettingsTwoColRow extends StatelessWidget {
   const SettingsTwoColRow({super.key, required this.children});
   final List<Widget> children;
@@ -34,10 +30,7 @@ class SettingsTwoColRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (children.length == 1) {
-      return SizedBox(
-        height: 76,
-        child: children.first,
-      );
+      return SizedBox(height: 76, child: children.first);
     }
     return SizedBox(
       height: 76,
@@ -54,6 +47,11 @@ class SettingsTwoColRow extends StatelessWidget {
 }
 
 /// Focusable setting card
+///
+/// [focusNode]      — inject করা হলে সেটা ব্যবহার হয় (first/last node)
+/// [isLastItem]     — true হলে ↓ চাপলে [onLastItemDown] call হয়
+/// [onNavigateLeft] — ← চাপলে sidebar এ ফেরত
+/// [onLastItemDown] — last item এ ↓ চাপলে sidebar এ wrap
 class SettingCard extends StatefulWidget {
   const SettingCard({
     super.key,
@@ -61,15 +59,24 @@ class SettingCard extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.focusNode,
     this.trailing,
     this.highlight = false,
+    this.onNavigateLeft,
+    this.isLastItem = false,
+    this.onLastItemDown,
   });
+
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final FocusNode? focusNode;
   final Widget? trailing;
   final bool highlight;
+  final VoidCallback? onNavigateLeft;
+  final bool isLastItem;
+  final VoidCallback? onLastItemDown;
 
   @override
   State<SettingCard> createState() => _SettingCardState();
@@ -81,9 +88,28 @@ class _SettingCardState extends State<SettingCard> {
   @override
   Widget build(BuildContext context) {
     final active = _focused || widget.highlight;
+
     return TvFocus(
+      focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onActivate: widget.onTap,
+      onKeyEvent: (event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+        // ← সবসময় sidebar এ ফেরত
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          widget.onNavigateLeft?.call();
+          return KeyEventResult.handled;
+        }
+        // ↓ last item এ → sidebar এ wrap
+        if (widget.isLastItem &&
+            event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          widget.onLastItemDown?.call();
+          return KeyEventResult.handled;
+        }
+
+        return KeyEventResult.ignored;
+      },
       builder: (context, focused) => GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(

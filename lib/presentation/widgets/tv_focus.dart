@@ -1,3 +1,5 @@
+// lib/presentation/widgets/tv_focus.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'tv_focus_utils.dart';
@@ -44,12 +46,15 @@ class _TvFocusState extends State<TvFocus> {
         widget.onFocusChange?.call(v);
       },
       onKeyEvent: (_, event) {
+        // onActivate চেক আগে
         if (widget.onActivate != null && isTvActivateKey(event)) {
           return handleTvActivate(event, widget.onActivate!);
         }
+        // Back চেক
         if (widget.onBack != null && isTvBackKey(event)) {
           return handleTvBack(event, widget.onBack!);
         }
+        // Custom key handler (Left arrow ইত্যাদি)
         return widget.onKeyEvent?.call(event) ?? KeyEventResult.ignored;
       },
       child: widget.builder(context, _focused),

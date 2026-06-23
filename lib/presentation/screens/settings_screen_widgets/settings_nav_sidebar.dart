@@ -9,64 +9,35 @@ class SettingsNavSidebar extends StatefulWidget {
   const SettingsNavSidebar({
     super.key,
     required this.activeSection,
+    required this.sidebarNodes,       // ← screen থেকে সব node আসে
     required this.onSelect,
     required this.onBack,
-    this.firstFocusNode, // বাইরে থেকে প্রথম ফোকাস নোড পাস করার সুযোগ
+    this.onNavigateRight,
   });
 
   final int activeSection;
+  final List<FocusNode> sidebarNodes; // [nav-0, nav-1, nav-2]
   final ValueChanged<int> onSelect;
   final VoidCallback onBack;
-  final FocusNode? firstFocusNode;
+  final VoidCallback? onNavigateRight;
 
   @override
   State<SettingsNavSidebar> createState() => _SettingsNavSidebarState();
 }
 
 class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
-  // ব্যাক বাটন + ৩টি নেভ আইটেম = ৪টি FocusNode
-  late final List<FocusNode> _nodes;
   final FocusNode _backNode = FocusNode(debugLabel: 'settings-back-btn');
 
   static const _items = [
-    _NavMeta(
-      icon: Icons.account_circle_rounded,
-      label: 'ACCOUNT',
-      hint: 'Login / Subscription',
-    ),
-    _NavMeta(
-      icon: Icons.tv_rounded,
-      label: 'TV SETTINGS',
-      hint: 'Boot Player and More',
-    ),
-    _NavMeta(
-      icon: Icons.settings_applications_rounded,
-      label: 'SYSTEM',
-      hint: 'Catalog / App Info',
-    ),
+    _NavMeta(icon: Icons.account_circle_rounded,        label: 'ACCOUNT',     hint: 'Login / Subscription'),
+    _NavMeta(icon: Icons.tv_rounded,                    label: 'TV SETTINGS', hint: 'Boot Player and More'),
+    _NavMeta(icon: Icons.settings_applications_rounded, label: 'SYSTEM',      hint: 'Catalog / App Info'),
   ];
 
   @override
-  void initState() {
-    super.initState();
-    // প্রথম নেভ আইটেমের জন্য বাইরে থেকে আসা FocusNode ব্যবহার করা হচ্ছে
-    // যাতে SettingsScreen সরাসরি ফোকাস দিতে পারে
-    _nodes = [
-      widget.firstFocusNode ?? FocusNode(debugLabel: 'settings-nav-0'),
-      FocusNode(debugLabel: 'settings-nav-1'),
-      FocusNode(debugLabel: 'settings-nav-2'),
-    ];
-  }
-
-  @override
   void dispose() {
-    if (!_backNode.disposed) _backNode.dispose();
-    // প্রথম নোডটি বাইরে থেকে এলে dispose করব না
-    if (widget.firstFocusNode == null && !_nodes[0].disposed) {
-      _nodes[0].dispose();
-    }
-    if (!_nodes[1].disposed) _nodes[1].dispose();
-    if (!_nodes[2].disposed) _nodes[2].dispose();
+    _backNode.dispose();
+    // sidebarNodes গুলো screen থেকে এসেছে, এখানে dispose করা যাবে না
     super.dispose();
   }
 
@@ -84,7 +55,7 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
           children: [
             const SizedBox(height: 24),
 
-            // ── Header with Back Button ──────────────────────────────
+            // ── Header + Back ─────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -92,14 +63,15 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
                   _BackButton(
                     focusNode: _backNode,
                     onTap: widget.onBack,
-                    // ব্যাক বাটনে উপরে গেলে ফোকাস নষ্ট না হওয়ার জন্য
                     onKeyEvent: (event) {
-                      if (event is KeyDownEvent) {
-                        // ব্যাক বাটন থেকে নিচে গেলে প্রথম নেভ আইটেমে
-                        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                          _nodes[0].requestFocus();
-                          return KeyEventResult.handled;
-                        }
+                      if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                        widget.sidebarNodes[0].requestFocus();
+                        return KeyEventResult.handled;
+                      }
+                      if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                        widget.onNavigateRight?.call();
+                        return KeyEventResult.handled;
                       }
                       return KeyEventResult.ignored;
                     },
@@ -108,10 +80,7 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
                   const Text(
                     'SETTINGS',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -119,28 +88,48 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
 
             const SizedBox(height: 24),
 
-            // ── Nav Items ───────────────────────────────────────────
+            // ── Nav Items ─────────────────────────────────────────────
             ...List.generate(_items.length, (i) {
-              final item = _items[i];
-              final isActive = widget.activeSection == i;
               return _NavItem(
-                focusNode: _nodes[i],
-                icon: item.icon,
-                label: item.label,
-                hint: item.hint,
-                isActive: isActive,
-                onTap: () => widget.onSelect(i),
-                // প্রথম আইটেম থেকে উপরে গেলে ব্যাক বাটনে ফোকাস
-                onKeyEvent: i == 0
-                    ? (event) {
-                        if (event is KeyDownEvent &&
-                            event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                          _backNode.requestFocus();
-                          return KeyEventResult.handled;
-                        }
-                        return KeyEventResult.ignored;
-                      }
-                    : null,
+                focusNode: widget.sidebarNodes[i],
+                icon: _items[i].icon,
+                label: _items[i].label,
+                hint: _items[i].hint,
+                isActive: widget.activeSection == i,
+                onSelect: () => widget.onSelect(i),
+                onKeyEvent: (event) {
+                  if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+                  // ↑ প্রথম item → back button
+                  if (i == 0 && event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    _backNode.requestFocus();
+                    return KeyEventResult.handled;
+                  }
+                  // ↓ শেষ item → absorb (wrap করব না)
+                  if (i == _items.length - 1 &&
+                      event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    return KeyEventResult.handled;
+                  }
+                  // ↑↓ normal
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp && i > 0) {
+                    widget.sidebarNodes[i - 1].requestFocus();
+                    widget.onSelect(i - 1);
+                    return KeyEventResult.handled;
+                  }
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+                      i < _items.length - 1) {
+                    widget.sidebarNodes[i + 1].requestFocus();
+                    widget.onSelect(i + 1);
+                    return KeyEventResult.handled;
+                  }
+                  // → Right → content
+                  if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                    widget.onNavigateRight?.call();
+                    return KeyEventResult.handled;
+                  }
+
+                  return KeyEventResult.ignored;
+                },
               );
             }),
 
@@ -161,20 +150,16 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
 }
 
 class _NavMeta {
-  const _NavMeta(
-      {required this.icon, required this.label, required this.hint});
+  const _NavMeta({required this.icon, required this.label, required this.hint});
   final IconData icon;
   final String label;
   final String hint;
 }
 
-// ── Back Button ─────────────────────────────────────────────────────────────
+// ── Back Button ───────────────────────────────────────────────────────────────
 class _BackButton extends StatefulWidget {
-  const _BackButton({
-    required this.focusNode,
-    required this.onTap,
-    this.onKeyEvent,
-  });
+  const _BackButton(
+      {required this.focusNode, required this.onTap, this.onKeyEvent});
   final FocusNode focusNode;
   final VoidCallback onTap;
   final KeyEventResult Function(KeyEvent)? onKeyEvent;
@@ -206,35 +191,28 @@ class _BackButtonState extends State<_BackButton> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: _focused
-                ? AppTheme.primary.withOpacity(0.2)
-                : Colors.transparent,
+            color: _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: _focused ? AppTheme.primary : Colors.transparent,
-            ),
+                color: _focused ? AppTheme.primary : Colors.transparent),
           ),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: _focused ? AppTheme.primary : Colors.white70,
-            size: 18,
-          ),
+          child: Icon(Icons.arrow_back_ios_new_rounded,
+              color: _focused ? AppTheme.primary : Colors.white70, size: 18),
         ),
       ),
     );
   }
 }
 
-// ── Nav Item ─────────────────────────────────────────────────────────────────
+// ── Nav Item ──────────────────────────────────────────────────────────────────
 class _NavItem extends StatefulWidget {
   const _NavItem({
-    super.key,
     required this.focusNode,
     required this.icon,
     required this.label,
     required this.hint,
     required this.isActive,
-    required this.onTap,
+    required this.onSelect,
     this.onKeyEvent,
   });
   final FocusNode focusNode;
@@ -242,7 +220,7 @@ class _NavItem extends StatefulWidget {
   final String label;
   final String hint;
   final bool isActive;
-  final VoidCallback onTap;
+  final VoidCallback onSelect;
   final KeyEventResult Function(KeyEvent)? onKeyEvent;
 
   @override
@@ -261,29 +239,22 @@ class _NavItemState extends State<_NavItem> {
         focusNode: widget.focusNode,
         onFocusChange: (v) {
           setState(() => _focused = v);
-          if (v) widget.onTap(); // ফোকাস হলেই সেকশন সুইচ
+          if (v) widget.onSelect();
         },
         onKeyEvent: (_, event) {
           if (event is KeyDownEvent &&
               (event.logicalKey == LogicalKeyboardKey.enter ||
                   event.logicalKey == LogicalKeyboardKey.select)) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-          // ডানে গেলে কনটেন্ট এরিয়ায় ফোকাস (Flutter ট্র্যাভার্সাল হ্যান্ডেল করবে)
-          if (event is KeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            FocusScope.of(context).nextFocus();
+            widget.onSelect();
             return KeyEventResult.handled;
           }
           return widget.onKeyEvent?.call(event) ?? KeyEventResult.ignored;
         },
         child: GestureDetector(
-          onTap: widget.onTap,
+          onTap: widget.onSelect,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: _focused
                   ? AppTheme.primary.withOpacity(0.2)
@@ -292,39 +263,31 @@ class _NavItemState extends State<_NavItem> {
                       : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: active ? AppTheme.primary : Colors.transparent,
-                width: 1.5,
-              ),
+                  color: active ? AppTheme.primary : Colors.transparent,
+                  width: 1.5),
             ),
             child: Row(
               children: [
                 Icon(widget.icon,
-                    color: active ? AppTheme.primary : Colors.white38,
-                    size: 20),
+                    color: active ? AppTheme.primary : Colors.white38, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.label,
-                        style: TextStyle(
-                          color: active ? Colors.white : Colors.white54,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        widget.hint,
-                        style: const TextStyle(
-                            color: Colors.white30, fontSize: 11),
-                      ),
+                      Text(widget.label,
+                          style: TextStyle(
+                              color: active ? Colors.white : Colors.white54,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700)),
+                      Text(widget.hint,
+                          style: const TextStyle(
+                              color: Colors.white30, fontSize: 11)),
                     ],
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                    color: active ? AppTheme.primary : Colors.white12,
-                    size: 16),
+                    color: active ? AppTheme.primary : Colors.white12, size: 16),
               ],
             ),
           ),
