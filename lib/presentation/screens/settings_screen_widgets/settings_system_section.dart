@@ -8,7 +8,14 @@ import 'settings_shared_widgets.dart';
 
 /// System section focus order:
 ///   card1 (Catalog) → card2 (Update) → card3 (Developer) → card4 (App Info) [last]
-class SettingsSystemSection extends StatelessWidget {
+///
+/// Layout:
+///   Row 1: [card1] [card2]
+///   Row 2: [card3] [card4]
+///
+/// সব card এর জন্য পূর্ণ arrow-key navigation wire করা আছে (←→↑↓), তাই কোনো দিকেই
+/// ফোকাস "হারিয়ে" যাবে না বা আটকে থাকবে না।
+class SettingsSystemSection extends StatefulWidget {
   const SettingsSystemSection({
     super.key,
     required this.appState,
@@ -24,8 +31,33 @@ class SettingsSystemSection extends StatelessWidget {
   final VoidCallback? onNavigateLeft;
   final VoidCallback? onLastItemDown;
 
+  @override
+  State<SettingsSystemSection> createState() => _SettingsSystemSectionState();
+}
+
+class _SettingsSystemSectionState extends State<SettingsSystemSection> {
+  // card2 (App Update) ও card3 (Developer) এর জন্য নিজস্ব FocusNode —
+  // আগে এই দুইটার কোনো focusNode-ই ছিল না, ফলে এদের context থেকে
+  // requestFocus() করে অন্য card থেকে নেভিগেট করা সম্ভব ছিল না।
+  late final FocusNode _card2Node;
+  late final FocusNode _card3Node;
+
+  @override
+  void initState() {
+    super.initState();
+    _card2Node = FocusNode(debugLabel: 'settings-system-card2');
+    _card3Node = FocusNode(debugLabel: 'settings-system-card3');
+  }
+
+  @override
+  void dispose() {
+    _card2Node.dispose();
+    _card3Node.dispose();
+    super.dispose();
+  }
+
   void _refreshCatalog(BuildContext context) {
-    appState.loadCatalog();
+    widget.appState.loadCatalog();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: const Text('Channel list is updating...'),
       backgroundColor: AppTheme.card,
@@ -41,8 +73,15 @@ class SettingsSystemSection extends StatelessWidget {
     ));
   }
 
+  void _focus(FocusNode node) {
+    if (mounted && !node.disposed) node.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final firstNode = widget.firstFocusNode;
+    final lastNode = widget.lastFocusNode;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -53,19 +92,36 @@ class SettingsSystemSection extends StatelessWidget {
         SettingsTwoColRow(
           children: [
             SettingCard(
-              focusNode: firstFocusNode,   // ← first
-              onNavigateLeft: onNavigateLeft,
+              focusNode: firstNode,   // ← first
+              onNavigateLeft: widget.onNavigateLeft,
               icon: Icons.sync_rounded,
               title: 'Catalog Refresh',
               subtitle: 'Update channel list',
               onTap: () => _refreshCatalog(context),
+              // → card2 এ যাবে
+              onMoveRight: () => _focus(_card2Node),
+              // ↓ card3 এ যাবে (নিচের row, একই column)
+              onMoveDown: () => _focus(_card3Node),
             ),
             SettingCard(
-              onNavigateLeft: onNavigateLeft,
+              focusNode: _card2Node,
+              onNavigateLeft: widget.onNavigateLeft,
               icon: Icons.system_update_rounded,
               title: 'App Update',
               subtitle: 'Check for new version',
               onTap: () => _checkForUpdates(context),
+              // ← card1 এ ফিরবে (sidebar এ যাবে না)
+              onMoveLeft: () {
+                if (firstNode != null) {
+                  _focus(firstNode);
+                } else {
+                  widget.onNavigateLeft?.call();
+                }
+              },
+              // ↓ card4 এ যাবে (নিচের row, একই column)
+              onMoveDown: () {
+                if (lastNode != null) _focus(lastNode);
+              },
             ),
           ],
         ),
@@ -76,25 +132,40 @@ class SettingsSystemSection extends StatelessWidget {
         SettingsTwoColRow(
           children: [
             SettingCard(
-              onNavigateLeft: onNavigateLeft,
+              focusNode: _card3Node,
+              onNavigateLeft: widget.onNavigateLeft,
               icon: Icons.code_rounded,
               title: 'Developer',
               subtitle: 'App development & support',
               onTap: () => showDialog(
                   context: context,
                   builder: (_) => const _DeveloperDialog()),
+              // → card4 এ যাবে
+              onMoveRight: () {
+                if (lastNode != null) _focus(lastNode);
+              },
+              // ↑ card1 এ ফিরবে (উপরের row, একই column)
+              onMoveUp: () {
+                if (firstNode != null) _focus(firstNode);
+              },
+              // ↓ sidebar এ wrap (এটাও content এর শেষ row)
+              onMoveDown: widget.onLastItemDown,
             ),
             SettingCard(
-              focusNode: lastFocusNode,    // ← last
+              focusNode: lastNode,    // ← last
               isLastItem: true,
-              onLastItemDown: onLastItemDown,
-              onNavigateLeft: onNavigateLeft,
+              onLastItemDown: widget.onLastItemDown,
+              onNavigateLeft: widget.onNavigateLeft,
               icon: Icons.info_outline_rounded,
               title: 'App Information',
               subtitle: 'Version and system information',
               onTap: () => showDialog(
                   context: context,
                   builder: (_) => const _AppInfoDialog()),
+              // ← card3 এ ফিরবে (sidebar এ যাবে না)
+              onMoveLeft: () => _focus(_card3Node),
+              // ↑ card2 এ ফিরবে (উপরের row, একই column)
+              onMoveUp: () => _focus(_card2Node),
             ),
           ],
         ),

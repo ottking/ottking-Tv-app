@@ -49,9 +49,17 @@ class SettingsTwoColRow extends StatelessWidget {
 /// Focusable setting card
 ///
 /// [focusNode]      — inject করা হলে সেটা ব্যবহার হয় (first/last node)
-/// [isLastItem]     — true হলে ↓ চাপলে [onLastItemDown] call হয়
-/// [onNavigateLeft] — ← চাপলে sidebar এ ফেরত
+/// [isLastItem]     — true হলে ↓ চাপলে [onLastItemDown] call হয় (যদি [onMoveDown] না দেওয়া হয়)
+/// [onNavigateLeft] — ← চাপলে sidebar এ ফেরত (যদি [onMoveLeft] না দেওয়া হয়)
 /// [onLastItemDown] — last item এ ↓ চাপলে sidebar এ wrap
+/// [onMoveRight]    — → চাপলে কাস্টম নেভিগেশন (যেমন: একই row এর পাশের card এ ফোকাস)
+/// [onMoveDown]     — ↓ চাপলে কাস্টম নেভিগেশন (যেমন: নিচের row এর card এ ফোকাস)
+/// [onMoveUp]       — ↑ চাপলে কাস্টম নেভিগেশন (যেমন: উপরের row এর card এ ফোকাস)
+/// [onMoveLeft]     — ← চাপলে কাস্টম নেভিগেশন; দেওয়া না হলে [onNavigateLeft] ব্যবহার হবে
+///
+/// গুরুত্বপূর্ণ: একটি গ্রিডে ২টির বেশি card থাকলে (যেমন ২x২ লেআউট) প্রতিটি card এর
+/// জন্য [onMoveRight]/[onMoveDown]/[onMoveUp] ঠিকভাবে wire করতে হবে — নাহলে arrow
+/// key চাপলে কোনো handler না পেয়ে ফোকাস "হারিয়ে যাওয়ার" মতো (কোনো প্রতিক্রিয়া না হওয়া) অনুভূত হয়।
 class SettingCard extends StatefulWidget {
   const SettingCard({
     super.key,
@@ -65,6 +73,10 @@ class SettingCard extends StatefulWidget {
     this.onNavigateLeft,
     this.isLastItem = false,
     this.onLastItemDown,
+    this.onMoveRight,
+    this.onMoveDown,
+    this.onMoveUp,
+    this.onMoveLeft,
   });
 
   final IconData icon;
@@ -77,6 +89,10 @@ class SettingCard extends StatefulWidget {
   final VoidCallback? onNavigateLeft;
   final bool isLastItem;
   final VoidCallback? onLastItemDown;
+  final VoidCallback? onMoveRight;
+  final VoidCallback? onMoveDown;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveLeft;
 
   @override
   State<SettingCard> createState() => _SettingCardState();
@@ -96,16 +112,37 @@ class _SettingCardState extends State<SettingCard> {
       onKeyEvent: (event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
-        // ← সবসময় sidebar এ ফেরত
+        // ← কাস্টম হ্যান্ডলার থাকলে সেটা, নাহলে sidebar এ ফেরত (ডিফল্ট আচরণ)
         if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          widget.onNavigateLeft?.call();
+          if (widget.onMoveLeft != null) {
+            widget.onMoveLeft!.call();
+          } else {
+            widget.onNavigateLeft?.call();
+          }
           return KeyEventResult.handled;
         }
-        // ↓ last item এ → sidebar এ wrap
-        if (widget.isLastItem &&
-            event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          widget.onLastItemDown?.call();
+        // → পাশের card এ ফোকাস (একই row)
+        if (event.logicalKey == LogicalKeyboardKey.arrowRight &&
+            widget.onMoveRight != null) {
+          widget.onMoveRight!.call();
           return KeyEventResult.handled;
+        }
+        // ↑ উপরের row এর card এ ফোকাস
+        if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+            widget.onMoveUp != null) {
+          widget.onMoveUp!.call();
+          return KeyEventResult.handled;
+        }
+        // ↓ নিচের row এর card এ ফোকাস (কাস্টম), নাহলে last item হলে sidebar এ wrap
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          if (widget.onMoveDown != null) {
+            widget.onMoveDown!.call();
+            return KeyEventResult.handled;
+          }
+          if (widget.isLastItem) {
+            widget.onLastItemDown?.call();
+            return KeyEventResult.handled;
+          }
         }
 
         return KeyEventResult.ignored;
