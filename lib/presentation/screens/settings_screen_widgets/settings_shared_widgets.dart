@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/tv_focus.dart';
 
 /// Section শিরোনাম
 class SectionHeader extends StatelessWidget {
@@ -80,18 +81,10 @@ class _SettingCardState extends State<SettingCard> {
   @override
   Widget build(BuildContext context) {
     final active = _focused || widget.highlight;
-    return Focus(
+    return TvFocus(
       onFocusChange: (v) => setState(() => _focused = v),
-      onKeyEvent: (_, e) {
-        if (e is KeyDownEvent &&
-            (e.logicalKey == LogicalKeyboardKey.enter ||
-                e.logicalKey == LogicalKeyboardKey.select)) {
-          widget.onTap();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: GestureDetector(
+      onActivate: widget.onTap,
+      builder: (context, focused) => GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

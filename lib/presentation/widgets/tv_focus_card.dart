@@ -2,8 +2,8 @@
 // Reusable TV remote–focusable card with glow effect
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
+import 'tv_focus.dart';
 
 class TvFocusCard extends StatefulWidget {
   const TvFocusCard({
@@ -40,24 +40,14 @@ class _TvFocusCardState extends State<TvFocusCard> {
       scale: _focused ? 1.05 : 1.0,
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeInOut,
-      child: Focus(
+      child: TvFocus(
         focusNode: widget.focusNode,
         onFocusChange: (v) {
           setState(() => _focused = v);
           widget.onFocusChange?.call(v);
         },
-        // রিমোটের OK/Enter/Select বাটন সরাসরি Focus উইজেটে ধরা হচ্ছে
-        onKeyEvent: (node, event) {
-          if (event is KeyDownEvent &&
-              (event.logicalKey == LogicalKeyboardKey.enter ||
-                  event.logicalKey == LogicalKeyboardKey.select ||
-                  event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        },
-        child: GestureDetector(
+        onActivate: widget.onTap,
+        builder: (context, focused) => GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),

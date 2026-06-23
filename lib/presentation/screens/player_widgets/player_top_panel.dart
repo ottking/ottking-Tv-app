@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/tv_focus.dart';
 
 class PlayerTopPanel extends StatefulWidget {
   const PlayerTopPanel({
@@ -121,22 +122,10 @@ class _PlayerTopPanelState extends State<PlayerTopPanel> {
         Positioned(
           top: 20,
           right: 20,
-          child: Focus(
+          child: TvFocus(
             focusNode: _settingsFocus,
-            onKeyEvent: (node, event) {
-              if (event is KeyDownEvent &&
-                  (event.logicalKey == LogicalKeyboardKey.enter ||
-                      event.logicalKey == LogicalKeyboardKey.select ||
-                      event.logicalKey == LogicalKeyboardKey.space)) {
-                widget.onSettings();
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
-            },
-            child: Builder(
-              builder: (ctx) {
-                final focused = Focus.of(ctx).hasFocus;
-                return GestureDetector(
+            onActivate: widget.onSettings,
+            builder: (ctx, focused) => GestureDetector(
                   onTap: widget.onSettings,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),

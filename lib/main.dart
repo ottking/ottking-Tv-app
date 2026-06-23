@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// মিডিয়া কিট প্যাকেজটি ইমপোর্ট করুন
-import 'package:media_kit/media_kit.dart'; 
 
 import 'app/app.dart';
 import 'core/constants/app_constants.dart';
@@ -17,11 +15,6 @@ import 'presentation/providers/app_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // ─── MEDIA KIT INITIALIZATION ──────────────────────────────────────
-  // MPD (DASH) এবং Clear Key প্লেব্যাকের জন্য নেটিভ কোর ইঞ্জিন রেডি করা
-  MediaKit.ensureInitialized();
-  // ───────────────────────────────────────────────────────────────────
 
   // Force landscape globally for TV
   await SystemChrome.setPreferredOrientations([

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/tv_focus.dart';
 
 class CategorySidebar extends StatelessWidget {
   const CategorySidebar({
@@ -95,32 +96,22 @@ class _CategoryItemState extends State<CategoryItem> {
     final active = _focused || widget.selected;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Focus(
+      child: TvFocus(
         focusNode: widget.focusNode,
         onFocusChange: (v) {
           setState(() => _focused = v);
           if (v) widget.onFocus();
         },
-        onKeyEvent: (_, e) {
-          if (e is! KeyDownEvent) return KeyEventResult.ignored;
-
-          // OK / Enter / Select → সিলেক্ট করে ক্যাটাগরি
-          if (e.logicalKey == LogicalKeyboardKey.enter ||
-              e.logicalKey == LogicalKeyboardKey.select ||
-              e.logicalKey == LogicalKeyboardKey.numpadEnter) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-
-          // → চাপলে চ্যানেল গ্রিডে সরাসরি ফোকাস
-          if (e.logicalKey == LogicalKeyboardKey.arrowRight) {
+        onActivate: widget.onTap,
+        onKeyEvent: (e) {
+          if (e is KeyDownEvent &&
+              e.logicalKey == LogicalKeyboardKey.arrowRight) {
             widget.onMoveRight?.call();
             return KeyEventResult.handled;
           }
-
           return KeyEventResult.ignored;
         },
-        child: GestureDetector(
+        builder: (context, focused) => GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),

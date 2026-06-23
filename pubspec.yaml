@@ -16,10 +16,6 @@ dependencies:
   encrypt: ^5.0.3
   video_player: ^2.9.2
   
-  # মিডিয়া কিটের সংস্করণ ফিক্স (একে অপরের সাথে সামঞ্জস্যপূর্ণ এবং স্টেবল)
-  media_kit_video: ^1.0.6
-  media_kit_libs_video: ^1.0.7
-  
   device_info_plus: ^10.1.2
   wakelock_plus: ^1.5.2
 
@@ -28,10 +24,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
-
-# পাব-সিস্টেমের গ্লোবাল ভার্সন ওভাররাইড লক
-dependency_overrides:
-  media_kit_libs_video: ^1.0.7
 
 flutter:
   uses-material-design: true

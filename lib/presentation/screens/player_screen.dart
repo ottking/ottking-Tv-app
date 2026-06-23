@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart' as native_vp;
-import 'package:media_kit/media_kit.dart' as mk;
-import 'package:media_kit_video/media_kit_video.dart' as mk_video;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -40,13 +38,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   native_vp.VideoPlayerController? _nativeCtrl;
   VoidCallback? _nativeCtrlListener;
 
-  mk.Player? _mkPlayer;
-  mk_video.VideoController? _mkVideoCtrl;
-  StreamSubscription? _mkErrorSubscription;
-  StreamSubscription? _mkTracksSubscription;
-
   String? _activeChannelId;
-  bool _isMpdEngine = false;
 
   bool _showControls = true;
   bool _isLoading = false;
@@ -73,20 +65,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _wakelock();
-      if (_isMpdEngine) {
+      if (_nativeCtrl?.value.hasError == true) {
+        _retryCount = 0;
         _initController();
-      } else {
-        if (_nativeCtrl?.value.hasError == true) {
-          _retryCount = 0;
-          _initController();
-        }
       }
     } else if (state == AppLifecycleState.paused) {
-      if (_isMpdEngine) {
-        _mkPlayer?.pause();
-      } else {
-        _nativeCtrl?.pause();
-      }
+      _nativeCtrl?.pause();
     }
   }
 
@@ -173,15 +157,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       } catch (_) {}
       oldCtrl.dispose();
     }
-
-    _mkErrorSubscription?.cancel();
-    _mkTracksSubscription?.cancel();
-    if (_mkPlayer != null) {
-      final oldPlayer = _mkPlayer!;
-      _mkPlayer = null;
-      _mkVideoCtrl = null;
-      try { await oldPlayer.dispose(); } catch (_) {}
-    }
   }
 
   void _prepareForExitRelease() {
@@ -195,16 +170,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   Future<void> _initController() async {
     if (!mounted || _appState == null) return;
     final channel = _appState!.currentChannel;
-
-    final bool currentUrlIsMpd = channel.streamUrl.contains('.mpd') || 
-        channel.isClearKey || 
-        channel.id.startsWith('mpd_'); 
-
-    if (_activeChannelId == channel.id && _isMpdEngine == currentUrlIsMpd) {
-      if (!_isMpdEngine && _nativeCtrl != null && _nativeCtrl!.value.isInitialized && !_nativeCtrl!.value.hasError) return;
-      if (_isMpdEngine && _mkPlayer != null) return;
-    }
-
     final int thisInitTimestamp = DateTime.now().millisecondsSinceEpoch;
     _currentInitTimestamp = thisInitTimestamp;
 
@@ -212,132 +177,59 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _isLoading = true;
       _hasStreamError = false;
       _activeChannelId = channel.id;
-      _isMpdEngine = currentUrlIsMpd;
     });
 
-    await _disposeControllers(); 
+    await _disposeControllers();
 
-    if (_isMpdEngine) {
-      final newPlayer = mk.Player();
-      final newVideoCtrl = mk_video.VideoController(newPlayer);
+    final newCtrl = native_vp.VideoPlayerController.networkUrl(
+      Uri.parse(channel.streamUrl),
+      videoPlayerOptions: native_vp.VideoPlayerOptions(
+        allowBackgroundPlayback: false,
+        mixWithOthers: false,
+      ),
+      httpHeaders: {
+        'User-Agent': 'oTtking-AndroidTV-Secure-Agent',
+        'X-App-Token': 'backend_generated_secret_handshake_token',
+        'Origin': 'https://ottking.internal',
+        'Accept': '*/*',
+      },
+    );
 
-      try {
-        if (channel.isClearKey && 
-            channel.clearKeyId != null && 
-            channel.clearKeyValue != null && 
-            channel.clearKeyId!.isNotEmpty && 
-            channel.clearKeyValue!.isNotEmpty) {
-          
-          // FIX: media_kit 1.2.x সংস্করণের প্রোপার্টি মেথড হ্যান্ডলিং
-          if (newPlayer.platform is mk.NativePlayer) {
-            await (newPlayer.platform as mk.NativePlayer).setProperty(
-              'stream-lavf-o', 
-              'decryption_key=${channel.clearKeyId}:${channel.clearKeyValue}',
-            );
-          }
-        }
-      } catch (_) {}
+    try {
+      await newCtrl.initialize().timeout(
+            const Duration(seconds: 20),
+            onTimeout: () => throw TimeoutException('timeout'),
+          );
 
-      _mkErrorSubscription = newPlayer.stream.error.listen((error) {
-        if (_currentInitTimestamp == thisInitTimestamp && mounted) _scheduleRetry();
-      });
-
-      _mkTracksSubscription = newPlayer.stream.tracks.listen((_) {
-        if (_currentInitTimestamp == thisInitTimestamp && mounted && _isLoading) {
-          setState(() => _isLoading = false);
-        }
-      });
-
-      try {
-        await newPlayer.open(
-          mk.Media(
-            channel.streamUrl,
-            httpHeaders: {
-              'User-Agent': 'oTtking-AndroidTV-Secure-Agent',
-              'X-App-Token': 'backend_generated_secret_handshake_token',
-              'Origin': 'https://ottking.internal',
-              'Accept': '*/*',
-            },
-          ),
-          play: true,
-        );
-
-        if (_currentInitTimestamp != thisInitTimestamp || !mounted) {
-          newPlayer.dispose();
-          return; 
-        }
-
-        _wakelock();
-        _retryCount = 0;
-
-        setState(() {
-          _mkPlayer = newPlayer;
-          _mkVideoCtrl = newVideoCtrl;
-          Timer(const Duration(milliseconds: 800), () {
-            if (mounted && _currentInitTimestamp == thisInitTimestamp) {
-              setState(() => _isLoading = false);
-            }
-          });
-        });
-      } catch (e) {
-        if (_currentInitTimestamp == thisInitTimestamp && mounted) {
-          newPlayer.dispose();
-          _handleLoadError();
-        } else {
-          newPlayer.dispose();
-        }
+      if (_currentInitTimestamp != thisInitTimestamp || !mounted) {
+        newCtrl.dispose();
+        return;
       }
-    } else {
-      final newCtrl = native_vp.VideoPlayerController.networkUrl(
-        Uri.parse(channel.streamUrl),
-        videoPlayerOptions: native_vp.VideoPlayerOptions(
-          allowBackgroundPlayback: false,
-          mixWithOthers: false,
-        ),
-        httpHeaders: {
-          'User-Agent': 'oTtking-AndroidTV-Secure-Agent',
-          'X-App-Token': 'backend_generated_secret_handshake_token',
-          'Origin': 'https://ottking.internal',
-          'Accept': '*/*',
-        },
-      );
 
-      try {
-        await newCtrl.initialize().timeout(
-              const Duration(seconds: 20),
-              onTimeout: () => throw TimeoutException('timeout'),
-            );
+      await newCtrl.play();
+      _wakelock();
 
-        if (_currentInitTimestamp != thisInitTimestamp || !mounted) {
-          newCtrl.dispose();
-          return; 
-        }
+      _nativeCtrlListener = _onNativeCtrlUpdate;
+      newCtrl.addListener(_nativeCtrlListener!);
+      _retryCount = 0;
 
-        await newCtrl.play();
-        _wakelock();
-
-        _nativeCtrlListener = _onNativeCtrlUpdate;
-        newCtrl.addListener(_nativeCtrlListener!);
-        _retryCount = 0;
-
-        setState(() {
-          _nativeCtrl = newCtrl;
-          _isLoading = false;
-          _hasStreamError = false;
-        });
-      } catch (e) {
-        if (_currentInitTimestamp == thisInitTimestamp && mounted) {
-          newCtrl.dispose();
-          _handleLoadError();
-        } else {
-          newCtrl.dispose();
-        }
+      setState(() {
+        _nativeCtrl = newCtrl;
+        _isLoading = false;
+        _hasStreamError = false;
+      });
+    } catch (e) {
+      if (_currentInitTimestamp == thisInitTimestamp && mounted) {
+        newCtrl.dispose();
+        _handleLoadError();
+      } else {
+        newCtrl.dispose();
       }
     }
   }
 
   void _onNativeCtrlUpdate() {
-    if (!mounted || _isMpdEngine) return;
+    if (!mounted) return;
     if (_nativeCtrl?.value.hasError == true) {
       _scheduleRetry();
       return;
@@ -464,14 +356,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   void _togglePlayPause() {
     if (_isLoading || _hasStreamError) return;
-    if (_isMpdEngine) {
-      if (_mkPlayer == null) return;
-      setState(() { _mkPlayer!.playOrPause(); });
-    } else {
-      final c = _nativeCtrl;
-      if (c == null || !c.value.isInitialized) return;
-      setState(() { c.value.isPlaying ? c.pause() : c.play(); });
-    }
+    final c = _nativeCtrl;
+    if (c == null || !c.value.isInitialized) return;
+    setState(() { c.value.isPlaying ? c.pause() : c.play(); });
     _wakelock();
     _startControlsTimer();
   }
@@ -540,8 +427,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (_appState == null) return const Scaffold(backgroundColor: Colors.black);
 
     final ch = _appState!.currentChannel;
-    final bool initialized = _isMpdEngine ? (_mkPlayer != null && !_hasStreamError) : (_nativeCtrl != null && _nativeCtrl!.value.isInitialized && !_hasStreamError);
-    final bool isLive = _isMpdEngine ? true : (_nativeCtrl?.value.duration == Duration.zero || _nativeCtrl?.value.duration == null);
+    final bool initialized = _nativeCtrl != null && _nativeCtrl!.value.isInitialized && !_hasStreamError;
+    final bool isLive = (_nativeCtrl?.value.duration == Duration.zero || _nativeCtrl?.value.duration == null);
 
     return PopScope(
       canPop: false, 
@@ -567,16 +454,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               children: [
                 if (initialized)
                   SizedBox.expand(
-                    child: _isMpdEngine
-                        ? mk_video.Video(controller: _mkVideoCtrl!)
-                        : FittedBox(
-                            fit: BoxFit.fill, 
-                            child: SizedBox(
-                              width: _nativeCtrl!.value.size.width,
-                              height: _nativeCtrl!.value.size.height,
-                              child: native_vp.VideoPlayer(_nativeCtrl!),
-                            ),
-                          ),
+                    child: FittedBox(
+                      fit: BoxFit.fill,
+                      child: SizedBox(
+                        width: _nativeCtrl!.value.size.width,
+                        height: _nativeCtrl!.value.size.height,
+                        child: native_vp.VideoPlayer(_nativeCtrl!),
+                      ),
+                    ),
                   )
                 else
                   LoadingOverlay(
@@ -603,7 +488,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
                 if (_showControls && initialized)
                   PlayerBottomBar(
-                    ctrl: _nativeCtrl ?? native_vp.VideoPlayerController.networkUrl(Uri.parse('')),
+                    ctrl: _nativeCtrl!,
                     isLive: isLive,
                     liveBlink: _liveBlink,
                     onPlayPause: _togglePlayPause,

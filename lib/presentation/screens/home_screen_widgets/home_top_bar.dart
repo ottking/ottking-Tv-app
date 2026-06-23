@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/tv_focus.dart';
 
 class HomeTopBar extends StatelessWidget {
   final AppState appState;
@@ -131,26 +132,19 @@ class _TvSettingsButtonState extends State<_TvSettingsButton> {
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'সেটিংস',
-      child: Focus(
+      child: TvFocus(
         focusNode: widget.focusNode,
         onFocusChange: (v) => setState(() => _focused = v),
-        onKeyEvent: (_, e) {
-          if (e is! KeyDownEvent) return KeyEventResult.ignored;
-          // OK চাপলে সেটিংসে যাবে
-          if (e.logicalKey == LogicalKeyboardKey.enter ||
-              e.logicalKey == LogicalKeyboardKey.select ||
-              e.logicalKey == LogicalKeyboardKey.numpadEnter) {
-            widget.onTap();
-            return KeyEventResult.handled;
-          }
-          // ↓ চাপলে ক্যাটাগরি সাইডবারে
-          if (e.logicalKey == LogicalKeyboardKey.arrowDown) {
+        onActivate: widget.onTap,
+        onKeyEvent: (e) {
+          if (e is KeyDownEvent &&
+              e.logicalKey == LogicalKeyboardKey.arrowDown) {
             widget.onDown?.call();
             return KeyEventResult.handled;
           }
           return KeyEventResult.ignored;
         },
-        child: GestureDetector(
+        builder: (context, focused) => GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
