@@ -8,12 +8,14 @@ class ChannelListPanel extends StatefulWidget {
     super.key,
     required this.channels,
     required this.currentIndex,
+    required this.onSettings,
     required this.onSelect,
     required this.onClose,
   });
 
   final List channels;
   final int currentIndex;
+  final VoidCallback onSettings;
   final ValueChanged<int> onSelect;
   final VoidCallback onClose;
 
@@ -98,6 +100,10 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
                     ),
                   ),
                   const Spacer(),
+                  _SettingsFocusButton(
+                    onSettings: widget.onSettings,
+                  ),
+                  const SizedBox(width: 8),
                   // ── Close button — ফোকাসযোগ্য ─────────────────
                   _CloseFocusButton(
                     focusNode: _closeBtnNode,
@@ -206,6 +212,59 @@ class _CloseFocusButtonState extends State<_CloseFocusButton> {
             size: 18,
           ),
           onPressed: widget.onClose,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsFocusButton extends StatefulWidget {
+  const _SettingsFocusButton({
+    required this.onSettings,
+  });
+
+  final VoidCallback onSettings;
+
+  @override
+  State<_SettingsFocusButton> createState() => _SettingsFocusButtonState();
+}
+
+class _SettingsFocusButtonState extends State<_SettingsFocusButton> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      onFocusChange: (v) => setState(() => _focused = v),
+      onKeyEvent: (_, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.select) {
+          widget.onSettings();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.goBack) {
+          return KeyEventResult.ignored;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: _focused ? AppTheme.primary : Colors.transparent,
+          ),
+        ),
+        child: IconButton(
+          icon: Icon(
+            Icons.settings,
+            color: _focused ? AppTheme.primary : Colors.white38,
+            size: 18,
+          ),
+          onPressed: widget.onSettings,
         ),
       ),
     );

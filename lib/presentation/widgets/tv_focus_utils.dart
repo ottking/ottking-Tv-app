@@ -1,5 +1,7 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'
+    show KeyEvent, KeyDownEvent, KeyUpEvent, LogicalKeyboardKey, KeyEventResult;
 
 /// প্লেয়ার রিমোট ও টিভি ফোকাস অ্যাকশন সার্বজনীন হেল্পার
 bool isTvActivateKey(KeyEvent event) {

@@ -9,7 +9,6 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
 import 'player_widgets/player_top_panel.dart';
-import 'player_widgets/player_bottom_bar.dart';
 import 'player_widgets/channel_list_panel.dart';
 import 'player_widgets/loading_overlay.dart';
 import 'player_widgets/app_info_dialog.dart';
@@ -57,9 +56,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   int _retryCount = 0;
   static const int _maxRetry = 3;
 
-  DateTime? _okDown;
-  bool _longHandled = false;
-  int _currentInitTimestamp = 0; 
+  int _currentInitTimestamp = 0;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -374,41 +371,48 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     final label = event.logicalKey.keyLabel;
 
     if (event is KeyDownEvent) {
-      if (RegExp(r'^[0-9]$').hasMatch(label)) { _handleNumberInput(label); return; }
+      if (RegExp(r'^[0-9]$').hasMatch(label)) {
+        _handleNumberInput(label);
+        return;
+      }
       // চ্যানেল লিস্ট খোলা থাকলে এই হ্যান্ডলার কাজ করবে না — লিস্টের ফোকাস নোড হ্যান্ডেল করবে
       if (!_showChannelList) {
-        if (event.logicalKey == LogicalKeyboardKey.channelUp || event.logicalKey == LogicalKeyboardKey.pageUp || event.logicalKey == LogicalKeyboardKey.arrowUp) { _switchChannel(-1); return; }
-        if (event.logicalKey == LogicalKeyboardKey.channelDown || event.logicalKey == LogicalKeyboardKey.pageDown || event.logicalKey == LogicalKeyboardKey.arrowDown) { _switchChannel(1); return; }
+        if (event.logicalKey == LogicalKeyboardKey.channelUp ||
+            event.logicalKey == LogicalKeyboardKey.pageUp ||
+            event.logicalKey == LogicalKeyboardKey.arrowUp) {
+          _switchChannel(-1);
+          return;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.channelDown ||
+            event.logicalKey == LogicalKeyboardKey.pageDown ||
+            event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          _switchChannel(1);
+          return;
+        }
       }
 
-      if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.space) {
-        _okDown ??= DateTime.now();
-        _longHandled = false;
+      if (!_showControls) {
+        setState(() => _showControls = true);
+        _startControlsTimer();
+        return;
       }
-
-      if (!_showControls) { setState(() => _showControls = true); _startControlsTimer(); return; }
       _startControlsTimer();
 
-      if (event.logicalKey == LogicalKeyboardKey.escape || event.logicalKey == LogicalKeyboardKey.goBack) {
+      if (event.logicalKey == LogicalKeyboardKey.escape ||
+          event.logicalKey == LogicalKeyboardKey.goBack) {
         _invokeExitWidget();
       }
     }
 
     if (event is KeyUpEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.space) {
-        final held = _okDown != null ? DateTime.now().difference(_okDown!) : Duration.zero;
-        _okDown = null;
-
-        if (!_longHandled && held.inMilliseconds >= 800) {
-          _longHandled = true;
-          setState(() {
-            _showChannelList = !_showChannelList;
-            if (_showChannelList) _showControls = true;
-          });
-        } else if (!_longHandled) {
-          _togglePlayPause();
-        }
-        _longHandled = false;
+      if (!_showChannelList &&
+          (event.logicalKey == LogicalKeyboardKey.enter ||
+              event.logicalKey == LogicalKeyboardKey.select ||
+              event.logicalKey == LogicalKeyboardKey.space)) {
+        setState(() {
+          _showChannelList = true;
+          _showControls = true;
+        });
       }
     }
   }
@@ -482,25 +486,14 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     channel: ch,
                     currentIndex: _appState!.currentChannelIndex,
                     totalChannels: _appState!.channels.length,
-                    onSettings: _openSettings,
                     typedNumber: _typed,
-                  ),
-
-                if (_showControls && initialized)
-                  PlayerBottomBar(
-                    ctrl: _nativeCtrl!,
-                    isLive: isLive,
-                    liveBlink: _liveBlink,
-                    onPlayPause: _togglePlayPause,
-                    onExit: _invokeExitWidget,
-                    onChannelUp: () => _switchChannel(-1),
-                    onChannelDown: () => _switchChannel(1),
                   ),
 
                 if (_showChannelList)
                   ChannelListPanel(
                     channels: _appState!.channels,
                     currentIndex: _appState!.currentChannelIndex,
+                    onSettings: _openSettings,
                     onSelect: (i) {
                       setState(() => _showChannelList = false);
                       _switchToIndex(i);

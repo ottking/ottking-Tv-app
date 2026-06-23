@@ -1,8 +1,6 @@
 // lib/presentation/screens/player_widgets/player_top_panel.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../widgets/tv_focus.dart';
 
 class PlayerTopPanel extends StatefulWidget {
   const PlayerTopPanel({
@@ -10,7 +8,6 @@ class PlayerTopPanel extends StatefulWidget {
     required this.channel,
     required this.currentIndex,
     required this.totalChannels,
-    required this.onSettings,
     this.typedNumber = '',
     this.isPlaying = false,
   });
@@ -18,7 +15,6 @@ class PlayerTopPanel extends StatefulWidget {
   final dynamic channel;
   final int currentIndex;
   final int totalChannels;
-  final VoidCallback onSettings;
   final String typedNumber; // নম্বর টাইপ হচ্ছে কিনা ট্র্যাক করার জন্য
   final bool isPlaying;
 
@@ -27,13 +23,6 @@ class PlayerTopPanel extends StatefulWidget {
 }
 
 class _PlayerTopPanelState extends State<PlayerTopPanel> {
-  final FocusNode _settingsFocus = FocusNode(debugLabel: 'settings-btn');
-
-  @override
-  void dispose() {
-    _settingsFocus.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,39 +107,6 @@ class _PlayerTopPanelState extends State<PlayerTopPanel> {
           ),
         ),
 
-        // ========== TOP-RIGHT: সেটিংস আইকন (Focusable for Smart TV) ==========
-        Positioned(
-          top: 20,
-          right: 20,
-          child: TvFocus(
-            focusNode: _settingsFocus,
-            onActivate: widget.onSettings,
-            builder: (ctx, focused) {
-              return GestureDetector(
-                onTap: widget.onSettings,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: focused
-                        ? AppTheme.primary.withOpacity(0.25)
-                        : Colors.black.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: focused ? AppTheme.primary : Colors.white.withOpacity(0.15),
-                      width: focused ? 2 : 1,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.settings_rounded,
-                    color: focused ? AppTheme.primary : Colors.white70,
-                    size: 26,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
       ],
     );
   }
