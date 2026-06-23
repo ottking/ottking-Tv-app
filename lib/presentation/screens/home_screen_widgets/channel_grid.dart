@@ -43,7 +43,7 @@ class _ChannelGridState extends State<ChannelGrid> {
           child: Row(
             children: [
               Text(
-                '📺 ${widget.categoryName} CHANNELS',
+                '${widget.categoryName} CHANNELS',
                 style: const TextStyle(
                   color: Colors.white38,
                   fontSize: 11,
