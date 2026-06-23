@@ -140,7 +140,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (_showControls) _startControlsTimer();
   }
 
-  Future<void> _disposeControllers() async {
+  void _disposeControllers() {
     if (_nativeCtrl != null) {
       final oldCtrl = _nativeCtrl!;
       _nativeCtrl = null;
@@ -149,10 +149,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         _nativeCtrlListener = null;
       }
       try {
-        await oldCtrl.setVolume(0);
-        if (oldCtrl.value.isPlaying) await oldCtrl.pause();
+        unawaited(oldCtrl.setVolume(0));
+        if (oldCtrl.value.isPlaying) {
+          unawaited(oldCtrl.pause());
+        }
       } catch (_) {}
-      oldCtrl.dispose();
+      unawaited(oldCtrl.dispose());
     }
   }
 
@@ -176,7 +178,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _activeChannelId = channel.id;
     });
 
-    await _disposeControllers();
+    _disposeControllers();
+
+    final activeController = _nativeCtrl;
+    if (activeController != null && activeController.value.isPlaying) {
+      unawaited(activeController.pause());
+    }
 
     final newCtrl = native_vp.VideoPlayerController.networkUrl(
       Uri.parse(channel.streamUrl),
@@ -199,22 +206,32 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           );
 
       if (_currentInitTimestamp != thisInitTimestamp || !mounted) {
-        newCtrl.dispose();
+        unawaited(newCtrl.dispose());
         return;
       }
 
       await newCtrl.play();
       _wakelock();
 
+      final previousCtrl = _nativeCtrl;
+      if (previousCtrl != null && previousCtrl != newCtrl) {
+        if (previousCtrl.value.isPlaying) {
+          unawaited(previousCtrl.pause());
+        }
+        unawaited(previousCtrl.dispose());
+      }
+
       _nativeCtrlListener = _onNativeCtrlUpdate;
+      _nativeCtrl = newCtrl;
       newCtrl.addListener(_nativeCtrlListener!);
       _retryCount = 0;
 
-      setState(() {
-        _nativeCtrl = newCtrl;
-        _isLoading = false;
-        _hasStreamError = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasStreamError = false;
+        });
+      }
     } catch (e) {
       if (_currentInitTimestamp == thisInitTimestamp && mounted) {
         newCtrl.dispose();
@@ -269,17 +286,17 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _retryTimer?.cancel();
     _retryCount = 0;
     _currentInitTimestamp = DateTime.now().millisecondsSinceEpoch;
-    await _disposeControllers();
+    _disposeControllers();
 
     setState(() {
       _showControls = true;
       _isLoading = true;
       _hasStreamError = false;
-      _activeChannelId = null; 
+      _activeChannelId = null;
     });
     _startControlsTimer();
     _appState!.switchChannel(direction);
-    Future.microtask(() { if (mounted) _initController(); });
+    if (mounted) _initController();
   }
 
   void _switchToIndex(int index) async {
@@ -292,7 +309,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _retryTimer?.cancel();
     _retryCount = 0;
     _currentInitTimestamp = DateTime.now().millisecondsSinceEpoch;
-    await _disposeControllers();
+    _disposeControllers();
 
     setState(() {
       _showControls = true;
@@ -301,7 +318,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       _activeChannelId = null;
     });
     _appState!.selectChannelByIndex(index);
-    Future.microtask(() { if (mounted) _initController(); });
+    if (mounted) _initController();
   }
 
   void _handleNumberInput(String digit) {
