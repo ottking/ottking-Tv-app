@@ -19,7 +19,7 @@ class SettingsAccountSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'অ্যাকাউন্ট'),
+        const SectionHeader(title: 'ACCOUNTS'),
         const SizedBox(height: 16),
 
         // ── ১. লগইন থাকলে প্রোফাইল কার্ড (সাইজ ছোট ও কম্প্যাক্ট করা হয়েছে) ──
@@ -35,10 +35,10 @@ class SettingsAccountSection extends StatelessWidget {
               icon: appState.isAuthenticated
                   ? Icons.manage_accounts_rounded
                   : Icons.login_rounded,
-              title: appState.isAuthenticated ? 'অ্যাকাউন্ট পরিচালনা' : 'লগইন করুন',
+              title: appState.isAuthenticated ? 'Account Management' : 'Sign In',
               subtitle: appState.isAuthenticated
                   ? appState.userProfile?.email ?? ''
-                  : 'প্রিমিয়াম চ্যানেল পেতে লগইন করুন',
+                  : 'Sign in to access premium channels',
               highlight: appState.isAuthenticated,
               onTap: () {
                 if (appState.isAuthenticated && appState.userProfile != null) {
@@ -63,10 +63,10 @@ class SettingsAccountSection extends StatelessWidget {
             ),
             SettingCard(
               icon: Icons.card_membership_rounded,
-              title: 'সাবস্ক্রিপশন',
+              title: 'SUBSCRIPTION',
               subtitle: appState.isAuthenticated
-                  ? 'প্ল্যান: ${appState.userProfile?.plan ?? "–"}'
-                  : 'প্যাকেজ ও মূল্য দেখুন',
+                  ? 'Plan: ${appState.userProfile?.plan ?? "–"}'
+                  : 'View packages and prices',
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => SubscriptionDialog(plans: appState.plans),
@@ -80,7 +80,7 @@ class SettingsAccountSection extends StatelessWidget {
         // ── ৩. বর্তমান সেকশন হিন্ট ──────────────────────────────────────────
         const _SectionHint(
           icon: Icons.info_outline_rounded,
-          text: 'বর্তমানে: অ্যাকাউন্ট সেটিংস — লগইন ও সাবস্ক্রিপশন পরিচালনা করুন।',
+          text: 'Current: Account Settings — Manage login and subscription.',
         ),
       ],
     );
@@ -179,7 +179,7 @@ class AccountCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'প্ল্যান: ${profile.plan}',
+                      'Plan: ${profile.plan}',
                       style: const TextStyle(
                         color: Color(0xFFEAB308),
                         fontSize: 11,
@@ -219,7 +219,7 @@ class AccountCard extends StatelessWidget {
               },
               icon: const Icon(Icons.logout_rounded, size: 14),
               label: const Text(
-                'লগআউট',
+                'Logout',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
             ),
@@ -246,7 +246,7 @@ class AccountInfoDialog extends StatelessWidget {
       backgroundColor: const Color(0xFF131B2E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text(
-        'অ্যাকাউন্ট তথ্য',
+        'Account Information',
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
       content: SizedBox(
@@ -255,18 +255,18 @@ class AccountInfoDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _AccountInfoRow(label: 'ইমেইল', value: profile.email),
+            _AccountInfoRow(label: 'Email', value: profile.email),
             const SizedBox(height: 12),
-            _AccountInfoRow(label: 'প্ল্যান', value: profile.plan),
+            _AccountInfoRow(label: 'Plan', value: profile.plan),
             const SizedBox(height: 12),
-            _AccountInfoRow(label: 'স্ট্যাটাস', value: 'Logged in'),
+            _AccountInfoRow(label: 'Status', value: 'Logged in'),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('বাতিল', style: TextStyle(color: Colors.white38)),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
         ),
         TvFocus(
           onActivate: onLogout,
@@ -275,7 +275,7 @@ class AccountInfoDialog extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: focused ? Colors.redAccent : AppTheme.primary,
             ),
-            child: const Text('লগআউট', style: TextStyle(color: Colors.white)),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),
         ),
       ],

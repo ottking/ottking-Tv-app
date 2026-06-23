@@ -42,7 +42,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
           Icon(Icons.info_rounded, color: AppTheme.primary),
           SizedBox(width: 10),
           Text(
-            'অ্যাপ তথ্য',
+            'App Info',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ],
@@ -63,7 +63,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
               child: Column(
                 children: [
                   const Text(
-                    'Live TV Player', // App Name
+                    'LTV Player', // App Name
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -96,7 +96,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
                 children: [
                   // কোম্পানি তথ্য
                   const Text(
-                    'কোম্পানি:',
+                    'Company:',
                     style: TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                   const SizedBox(height: 2),
@@ -115,7 +115,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
 
                   // ডেভেলপার তথ্য
                   const Text(
-                    'ডেভেলপার:',
+                    'Developer:',
                     style: TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                   const SizedBox(height: 2),
@@ -135,7 +135,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
             // ===== ৩. Powered By সেকশন =====
             Center(
               child: Text(
-                'Powered by ottking',
+                'Powered by OTTKING',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.4),
                   fontSize: 12,
@@ -184,7 +184,7 @@ class _AppInfoDialogState extends State<AppInfoDialog> {
                 ),
               ),
               child: Text(
-                'বন্ধ',
+                'Close',
                 style: TextStyle(
                   color: _isCloseFocused ? Colors.white : Colors.white70,
                   fontSize: 14,

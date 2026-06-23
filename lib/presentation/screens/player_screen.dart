@@ -303,7 +303,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (_appState == null) return;
     final allCh = _appState!.channels;
     if (index < 0 || index >= allCh.length) {
-      _showSnack('$index নম্বরে কোনো চ্যানেল নেই');
+      _showSnack('$index No channel is available on this number.');
       return;
     }
     _retryTimer?.cancel();

@@ -13,13 +13,13 @@ class SubscriptionDialog extends StatelessWidget {
       backgroundColor: const Color(0xFF131B2E),
       shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('সাবস্ক্রিপশন প্ল্যান',
+      title: const Text('Subscription Plan',
           style: TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: 480,
         child: plans.isEmpty
-            ? const Text('কোনো প্ল্যান পাওয়া যায়নি।',
+            ? const Text('No plans available.',
                 style: TextStyle(color: Colors.white54))
             : ListView.separated(
                 shrinkWrap: true,
@@ -83,7 +83,7 @@ class SubscriptionDialog extends StatelessWidget {
         TextButton(
               autofocus: true,
           onPressed: () => Navigator.pop(context),
-          child: const Text('বন্ধ',
+          child: const Text('Close',
               style: TextStyle(
                   color: AppTheme.primary, fontWeight: FontWeight.bold)),
         ),

@@ -18,7 +18,7 @@ class SettingsTvSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'TV সেটিংস'),
+        const SectionHeader(title: 'TV SETTINGS'),
         const SizedBox(height: 16),
 
         SettingsTwoColRow(
@@ -26,10 +26,10 @@ class SettingsTvSection extends StatelessWidget {
             // ── Boot Player toggle ─────────────────────────────────────────
             SettingCard(
               icon: Icons.rocket_launch_rounded,
-              title: 'Boot Player (অটো প্লেয়ার)',
+              title: 'Boot Player (Auto Player)',
               subtitle: isBootEnabled
-                  ? 'চালু — অ্যাপ খুললেই লাইভ টিভি শুরু হবে'
-                  : 'বন্ধ — হোম পেজে যাবে',
+                  ? 'On — App will start live TV automatically'
+                  : 'Off — Will go to home page',
               highlight: isBootEnabled,
               // টিভি রিমোটের ফোকাস যেন কনফ্লিক্ট না করে, তাই সুইচের onChanged ডিরেক্ট কার্ডের টগলে পাস করা হলো
               trailing: Switch(
@@ -84,7 +84,7 @@ class _BootHintCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'বর্তমানে: TV সেটিংস',
+                  'Current: TV Settings',
                   style: TextStyle(
                     color: enabled ? AppTheme.primary : Colors.white54,
                     fontWeight: FontWeight.bold,
@@ -94,8 +94,8 @@ class _BootHintCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   enabled
-                      ? 'Boot Player চালু আছে। অ্যাপ রান হওয়ার সাথে সাথে সরাসরি লাইভ টিভি প্লেয়ার ওপেন হবে।'
-                      : 'Boot Player বন্ধ আছে। অ্যাপ রান হওয়ার পর প্রথমে স্ট্যান্ডার্ড হোম পেজ ওপেন হবে।',
+                      ? 'Boot Player is ON. The Live TV player will launch automatically on app startup.'
+    : 'Boot Player is OFF. The home page will open first on app startup.',
                   style: const TextStyle(color: Colors.white38, fontSize: 12),
                 ),
               ],

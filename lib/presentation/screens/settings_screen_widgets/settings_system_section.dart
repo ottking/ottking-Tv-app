@@ -14,7 +14,7 @@ class SettingsSystemSection extends StatelessWidget {
     appState.loadCatalog();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('চ্যানেল লিস্ট আপডেট হচ্ছে...'),
+        content: const Text('Channel list is updating...'),
         backgroundColor: AppTheme.card,
         duration: const Duration(seconds: 2),
       ),
@@ -24,7 +24,7 @@ class SettingsSystemSection extends StatelessWidget {
   void _checkForUpdates(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('নতুন আপডেটের জন্য চেক করা হচ্ছে...'),
+        content: const Text('Checking for new updates...'),
         backgroundColor: AppTheme.card,
         duration: const Duration(seconds: 2),
       ),
@@ -36,7 +36,7 @@ class SettingsSystemSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'সিস্টেম'),
+        const SectionHeader(title: 'SYSTEM'),
         const SizedBox(height: 16),
 
         // ── প্রথম লাইন (কার্ড ১ এবং কার্ড ২) ──────────────────────────────────
@@ -45,16 +45,16 @@ class SettingsSystemSection extends StatelessWidget {
             // ── ১. ক্যাটালগ রিফ্রেশ ──────────────────────────────────────────
             SettingCard(
               icon: Icons.sync_rounded,
-              title: 'ক্যাটালগ রিফ্রেশ',
-              subtitle: 'চ্যানেল লিস্ট আপডেট করুন',
+              title: 'Catalog Refresh',
+              subtitle: 'Update channel list',
               onTap: () => _refreshCatalog(context),
             ),
 
             // ── ২. অ্যাপ আপডেট ────────────────────────────────────────────
             SettingCard(
               icon: Icons.system_update_rounded,
-              title: 'অ্যাপ আপডেট',
-              subtitle: 'নতুন ভার্সন চেক করুন',
+              title: 'App Update',
+              subtitle: 'Check for new version',
               onTap: () => _checkForUpdates(context),
             ),
           ],
@@ -68,8 +68,8 @@ class SettingsSystemSection extends StatelessWidget {
             // ── ৩. ডেভেলপার ────────────────────────────────────────────────
             SettingCard(
               icon: Icons.code_rounded,
-              title: 'ডেভেলপার',
-              subtitle: 'Anirban Sumon',
+              title: 'Developer',
+              subtitle: 'App development & support',
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => const _DeveloperDialog(),
@@ -79,8 +79,8 @@ class SettingsSystemSection extends StatelessWidget {
             // ── ৪. অ্যাপ তথ্য ──────────────────────────────────────────────
             SettingCard(
               icon: Icons.info_outline_rounded,
-              title: 'অ্যাপ তথ্য',
-              subtitle: 'ভার্সন ও সিস্টেম তথ্য',
+              title: 'App Information',
+              subtitle: 'Version and system information',
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => const _AppInfoDialog(),
@@ -110,7 +110,7 @@ class _DeveloperDialog extends StatelessWidget {
         children: [
           Icon(Icons.person_rounded, color: AppTheme.primary),
           SizedBox(width: 10),
-          Text('ডেভেলপার তথ্য', style: TextStyle(color: Colors.white)),
+          Text('Developer Information', style: TextStyle(color: Colors.white)),
         ],
       ),
       content: Column(
@@ -118,7 +118,7 @@ class _DeveloperDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'প্রধান ডেভেলপার ও প্রজেক্ট আর্কিটেক্ট:',
+            'Main Developer and Project Architect:',
             style: TextStyle(color: Colors.white54, fontSize: 13),
           ),
           const SizedBox(height: 6),
@@ -182,7 +182,7 @@ class _AppInfoDialog extends StatelessWidget {
         children: [
           Icon(Icons.info_rounded, color: AppTheme.primary),
           SizedBox(width: 10),
-          Text('অ্যাপ তথ্য', style: TextStyle(color: Colors.white)),
+          Text('App Information', style: TextStyle(color: Colors.white)),
         ],
       ),
       content: const Column(
@@ -227,7 +227,7 @@ class _AppInfoDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('বন্ধ', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
       ],

@@ -32,7 +32,7 @@ class LoadingOverlay extends StatelessWidget {
                   color: Colors.white38, size: 64),
               const SizedBox(height: 16),
               Text(
-                '$channelName — চ্যানেল অফলাইন',
+                '$channelName — Offline',
                 style: const TextStyle(
                     color: Colors.white60, fontSize: 18),
               ),
@@ -42,14 +42,14 @@ class LoadingOverlay extends StatelessWidget {
                 children: [
                   _OverlayBtn(
                     icon: Icons.refresh_rounded,
-                    label: 'রিট্রাই',
+                    label: 'Retry',
                     onTap: onRetry,
                     color: AppTheme.primary,
                   ),
                   const SizedBox(width: 16),
                   _OverlayBtn(
                     icon: Icons.skip_next_rounded,
-                    label: 'পরের চ্যানেল',
+                    label: 'Next Channel',
                     onTap: onNext,
                     color: Colors.white24,
                   ),
@@ -61,7 +61,7 @@ class LoadingOverlay extends StatelessWidget {
               const SizedBox(height: 16),
               if (retryCount > 0)
                 Text(
-                  'পুনরায় চেষ্টা করা হচ্ছে... ($retryCount/$maxRetry)',
+                  'Retrying...$retryCount/$maxRetry',
                   style: const TextStyle(
                       color: Colors.white54, fontSize: 14),
                 ),

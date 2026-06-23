@@ -76,7 +76,7 @@ class _ChannelGridState extends State<ChannelGrid> {
           child: widget.channels.isEmpty
               ? const Center(
                   child: Text(
-                    'কোনো চ্যানেল পাওয়া যায়নি',
+                    'No channels available.',
                     style: TextStyle(color: Colors.white38, fontSize: 16),
                   ),
                 )

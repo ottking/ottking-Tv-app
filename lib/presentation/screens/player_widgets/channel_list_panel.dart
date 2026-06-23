@@ -92,7 +92,7 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
                   const Icon(Icons.list_rounded, color: AppTheme.primary, size: 20),
                   const SizedBox(width: 8),
                   const Text(
-                    'চ্যানেল লিস্ট',
+                    'Channel List',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -133,7 +133,7 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
                     isActive: isActive,
                     onSelect: () => widget.onSelect(i),
                     onClose: widget.onClose,
-                    // প্রথম আইটেম থেকে ↑ গেলে close বাটনে
+                    // First item from ↑ goes to close button
                     onKeyEvent: i == 0
                         ? (event) {
                             if (event is KeyDownEvent &&

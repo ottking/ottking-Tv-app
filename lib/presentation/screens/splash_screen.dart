@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'নেটওয়ার্ক বা সার্ভারে সমস্যা হচ্ছে। আবার চেষ্টা করুন।';
+          _errorMessage = 'A network or server error has occurred. Please try again.';
         });
       }
     }
@@ -215,7 +215,7 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'চ্যানেল লোড হচ্ছে...',
+                                'Loading channels...',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.5),
                                   fontSize: 13,
@@ -252,7 +252,7 @@ class _SplashScreenState extends State<SplashScreen>
                                       fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                                 icon: const Icon(Icons.refresh_rounded, size: 20),
-                                label: const Text('আবার চেষ্টা করুন'),
+                                label: const Text('Try Again'),
                               ),
                             ],
                           ],

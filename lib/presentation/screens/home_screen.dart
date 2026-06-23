@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
 
     final cats = <Map<String, String>>[
-      {'name': 'All', 'icon': '🌐'},
+      {'name': 'All', 'icon': ''},
       ...appState.categories.map((c) => {'name': c.name, 'icon': c.icon}),
     ];
 

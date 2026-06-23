@@ -81,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           body: Row(
             children: [
               // ── Left Sidebar ──────────────────────────────────────────
-              // FocusTraversalGroup দিয়ে সাইডবার ও কনটেন্ট আলাদা করা হলো
+          
               FocusTraversalGroup(
                 policy: OrderedTraversalPolicy(),
                 child: SettingsNavSidebar(

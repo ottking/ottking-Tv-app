@@ -44,7 +44,7 @@ class _AuthDialogState extends State<AuthDialog> {
       backgroundColor: const Color(0xFF131B2E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        _isRegister ? 'নতুন অ্যাকাউন্ট' : 'সাইন ইন',
+        _isRegister ? 'Create Account' : 'Sign In',
         style: const TextStyle(
             color: Colors.white, fontWeight: FontWeight.bold),
       ),
@@ -69,8 +69,7 @@ class _AuthDialogState extends State<AuthDialog> {
                   setState(() => _isRegister = !_isRegister),
               child: Text(
                 _isRegister
-                    ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? সাইন ইন করুন'
-                    : 'নতুন অ্যাকাউন্ট তৈরি করুন',
+                    ? 'Already have an account? Sign in': 'Create a new account',
                 style: const TextStyle(color: AppTheme.primary),
               ),
             ),
@@ -88,13 +87,13 @@ class _AuthDialogState extends State<AuthDialog> {
               appState.logout();
               Navigator.pop(context);
             },
-            child: const Text('লগআউট',
+            child: const Text('Logout',
                 style: TextStyle(
                     color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('বাতিল',
+          child: const Text('Cancel',
               style: TextStyle(color: Colors.white38)),
         ),
         FilledButton(
@@ -114,7 +113,7 @@ class _AuthDialogState extends State<AuthDialog> {
                         AlwaysStoppedAnimation<Color>(Colors.white),
                   ))
               : Text(
-                  _isRegister ? 'রেজিস্ট্রেশন' : 'লগইন',
+                  _isRegister ? 'Register' : 'Sign In',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.black),
                 ),

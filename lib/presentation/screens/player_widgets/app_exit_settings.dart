@@ -27,21 +27,21 @@ class AppExitHandler {
             side: BorderSide(color: AppTheme.primary, width: 1.5),
           ),
           title: const Text(
-            'অ্যাপ এক্সিট করবেন?',
+            'Exit App',
             style: TextStyle(color: Colors.white),
           ),
           content: const Text(
-            'সম্পূর্ণ অ্যাপ বন্ধ করতে চান?',
+            'Do you want to exit the app completely?',
             style: TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('না', style: TextStyle(color: Colors.white54)),
+              child: const Text('No', style: TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text('হ্যাঁ', style: TextStyle(color: AppTheme.primary)),
+              child: Text('Yes', style: TextStyle(color: AppTheme.primary)),
             ),
           ],
         ),
@@ -193,7 +193,7 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
         children: [
           Icon(Icons.settings, color: Colors.white),
           Spacer(),
-          Text('প্লেয়ার সেটিংস', style: TextStyle(color: Colors.white)),
+          Text('Settings', style: TextStyle(color: Colors.white)),
         ],
       ),
       content: Column(
@@ -203,9 +203,9 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
             listIndex: currentVisualIndex++,
             onActivate: () => state.togglePlayerBoot(),
             child: SwitchListTile(
-              title: const Text('Boot Player (অটো প্লেয়ার)', style: TextStyle(color: Colors.white)),
+              title: const Text('Boot Player ', style: TextStyle(color: Colors.white)),
               subtitle: Text(
-                'অ্যাপ চালু হলে সরাসরি লাইভ টিভি ওপেন হবে',
+                'App will open live TV directly when launched',
                 style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
               ),
               activeColor: AppTheme.primary,
@@ -227,8 +227,8 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
                     style: const TextStyle(color: Colors.white),
                   ),
                   subtitle: Text(
-                    'প্যাকেজ: ${state.userProfile?.plan ?? ''}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    'Package: ${state.userProfile?.plan ?? ''}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 9),
                   ),
                 ),
               ),
@@ -241,8 +241,8 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
             onActivate: widget.onAppInfo,
             child: ListTile(
               leading: const Icon(Icons.info_outline_rounded, color: AppTheme.primary),
-              title: const Text('অ্যাপ তথ্য (App Info)', style: TextStyle(color: Colors.white)),
-              subtitle: const Text('ভার্সন ও ডেভেলপার তথ্য',
+              title: const Text('App Info', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Version and Developer Information',
                   style: TextStyle(color: Colors.white54, fontSize: 12)),
               trailing: const Icon(Icons.chevron_right, color: Colors.white38),
             ),
@@ -256,14 +256,14 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Text(
-              'সেটিংস', 
+              'Settings', 
               style: TextStyle(color: _focusedIndex == (currentVisualIndex - 1) ? Colors.white : Colors.white54),
             ),
           ),
         ),
         TextButton(
           onPressed: widget.onClose,
-          child: Text('বন্ধ', style: TextStyle(color: AppTheme.primary)),
+          child: Text('Close', style: TextStyle(color: AppTheme.primary)),
         ),
       ],
     );

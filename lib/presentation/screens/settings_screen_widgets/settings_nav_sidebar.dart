@@ -31,18 +31,18 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
   static const _items = [
     _NavMeta(
       icon: Icons.account_circle_rounded,
-      label: 'অ্যাকাউন্ট',
-      hint: 'লগইন / সাবস্ক্রিপশন',
+      label: 'ACCOUNT',
+      hint: 'Login / Subscription',
     ),
     _NavMeta(
       icon: Icons.tv_rounded,
-      label: 'TV সেটিংস',
-      hint: 'Boot Player ও আরও',
+      label: 'TV SETTINGS',
+      hint: 'Boot Player and More',
     ),
     _NavMeta(
       icon: Icons.settings_applications_rounded,
-      label: 'সিস্টেম',
-      hint: 'ক্যাটালগ / অ্যাপ তথ্য',
+      label: 'SYSTEM',
+      hint: 'Catalog / App Info',
     ),
   ];
 
@@ -106,7 +106,7 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'সেটিংস',
+                    'SETTINGS',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,

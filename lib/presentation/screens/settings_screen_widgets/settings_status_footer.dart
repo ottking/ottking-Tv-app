@@ -30,8 +30,8 @@ class SettingsStatusFooter extends StatelessWidget {
                 ? Icons.cloud_done_rounded
                 : Icons.warning_amber_rounded,
             label: appState.errorMessage.isEmpty
-                ? 'API সংযোগ সচল'
-                : 'API সমস্যা',
+                ? 'API Connected'
+                : 'API Problem',
             color: appState.errorMessage.isEmpty
                 ? AppTheme.primary
                 : Colors.redAccent,
@@ -39,7 +39,7 @@ class SettingsStatusFooter extends StatelessWidget {
           const SizedBox(width: 24),
           _Badge(
             icon: Icons.live_tv_rounded,
-            label: '${appState.channels.length} চ্যানেল',
+            label: '${appState.channels.length} Channels',
             color: Colors.white54,
           ),
         ],
