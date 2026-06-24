@@ -15,6 +15,7 @@ class CategorySidebar extends StatelessWidget {
     required this.onSelect,
     // ডানে গেলে চ্যানেল গ্রিডের প্রথম আইটেমে সরাসরি ফোকাস দেওয়ার callback
     this.onMoveRight,
+    this.onBack,
   });
 
   final List<Map<String, String>> cats;
@@ -22,6 +23,7 @@ class CategorySidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback? onMoveRight;
+  final Future<void> Function()? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +55,8 @@ class CategorySidebar extends StatelessWidget {
                 selected: selectedIndex == i,
                 onTap: () => onSelect(i),
                 onFocus: () => onSelect(i),
-                // ডানে arrow চাপলে callback দিয়ে চ্যানেল গ্রিডে যাবে
                 onMoveRight: onMoveRight,
+                onBack: onBack,
               );
             },
           ),
@@ -74,6 +76,7 @@ class CategoryItem extends StatefulWidget {
     required this.onTap,
     required this.onFocus,
     this.onMoveRight,
+    this.onBack,
   });
 
   final FocusNode focusNode;
@@ -83,6 +86,7 @@ class CategoryItem extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onFocus;
   final VoidCallback? onMoveRight;
+  final Future<void> Function()? onBack;
 
   @override
   State<CategoryItem> createState() => _CategoryItemState();
@@ -103,6 +107,7 @@ class _CategoryItemState extends State<CategoryItem> {
           if (v) widget.onFocus();
         },
         onActivate: widget.onTap,
+        onBack: widget.onBack == null ? null : () { widget.onBack!(); },
         onKeyEvent: (e) {
           if (e is KeyDownEvent &&
               e.logicalKey == LogicalKeyboardKey.arrowRight) {

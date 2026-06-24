@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/tv_focus_utils.dart';
 import 'player_widgets/player_top_panel.dart';
 import 'player_widgets/channel_list_panel.dart';
 import 'player_widgets/loading_overlay.dart';
@@ -48,14 +49,12 @@ class _PlayerScreenState extends State<PlayerScreen>
   bool _isLoading = false;
   bool _hasStreamError = false;
   bool _showChannelList = false;
-  bool _liveBlink = true;
 
   AppState? _appState;
 
   Timer? _controlsTimer;
   Timer? _numberTimer;
   Timer? _retryTimer;
-  Timer? _blinkTimer;
 
   String _typed = '';
   int _retryCount = 0;
@@ -85,7 +84,6 @@ class _PlayerScreenState extends State<PlayerScreen>
     WidgetsBinding.instance.addObserver(this);
     _forceFullLandscape();
     _wakelock();
-    _startBlinkTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -119,12 +117,36 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Settings dialog বা অন্য screen থেকে ফিরে এলে player focus রিস্টোর
   @override
   void didPopNext() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focus.requestFocus();
-        _startControlsTimer();
-      }
-    });
+    restoreFocusAfterFrame(_focus, ifMounted: () => mounted);
+    _startControlsTimer();
+  }
+
+  void _restorePlayerFocus() {
+    restoreFocusAfterFrame(_focus, ifMounted: () => mounted && !_showChannelList);
+  }
+
+  /// Back press priority: close channel list → show exit (controls visible) → show controls.
+  Future<void> _handleBackPress() async {
+    if (_showChannelList) {
+      setState(() => _showChannelList = false);
+      _restorePlayerFocus();
+      return;
+    }
+
+    if (!_showControls) {
+      setState(() => _showControls = true);
+      _startControlsTimer();
+      _restorePlayerFocus();
+      return;
+    }
+
+    if (_appState == null) return;
+    await AppExitHandler.handleExit(
+      context: context,
+      appState: _appState!,
+      onBeforeDispose: _prepareForExitRelease,
+      onCancelled: _restorePlayerFocus,
+    );
   }
 
   void _forceFullLandscape() {
@@ -139,11 +161,11 @@ class _PlayerScreenState extends State<PlayerScreen>
     try { await WakelockPlus.enable(); } catch (_) {}
   }
 
-  void _startBlinkTimer() {
-    _blinkTimer?.cancel();
-    _blinkTimer = Timer.periodic(const Duration(milliseconds: 600), (_) {
-      if (mounted) setState(() => _liveBlink = !_liveBlink);
-    });
+  void _prepareForExitRelease() {
+    _controlsTimer?.cancel();
+    _numberTimer?.cancel();
+    _retryTimer?.cancel();
+    _disposeControllers();
   }
 
   void _startControlsTimer() {
@@ -177,14 +199,6 @@ class _PlayerScreenState extends State<PlayerScreen>
       } catch (_) {}
       unawaited(oldCtrl.dispose());
     }
-  }
-
-  void _prepareForExitRelease() {
-    _controlsTimer?.cancel();
-    _numberTimer?.cancel();
-    _retryTimer?.cancel();
-    _blinkTimer?.cancel();
-    _disposeControllers();
   }
 
   Future<void> _initController() async {
@@ -304,13 +318,9 @@ class _PlayerScreenState extends State<PlayerScreen>
     }
   }
 
-  void _requestFocus() {
-    if (mounted) {
-      _focus.requestFocus();
-    }
-  }
+  void _requestFocus() => _restorePlayerFocus();
 
-  void _switchChannel(int direction) async {
+  void _switchChannel(int direction) {
     if (_appState == null) return;
     _retryTimer?.cancel();
     _retryCount = 0;
@@ -326,6 +336,19 @@ class _PlayerScreenState extends State<PlayerScreen>
     _startControlsTimer();
     _appState!.switchChannel(direction);
     if (mounted) _initController();
+  }
+
+  void _showSnack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppTheme.card,
+        ),
+      );
   }
 
   void _switchToIndex(int index) async {
@@ -376,9 +399,8 @@ class _PlayerScreenState extends State<PlayerScreen>
         ),
       ),
     ).then((_) {
-      // Dialog বন্ধ হলে player root focus রিস্টোর
       if (mounted) {
-        _focus.requestFocus();
+        _restorePlayerFocus();
         _startControlsTimer();
       }
     });
@@ -389,88 +411,67 @@ class _PlayerScreenState extends State<PlayerScreen>
       context: context,
       builder: (_) => const AppInfoDialog(),
     ).then((_) {
-      // Dialog বন্ধ হলে player root focus রিস্টোর
       if (mounted) {
-        _focus.requestFocus();
+        _restorePlayerFocus();
         _startControlsTimer();
       }
     });
   }
 
-  Future<void> _invokeExitWidget() async {
-    if (_appState == null) return;
-    await AppExitHandler.handleExit(
-      context: context,
-      appState: _appState!,
-      onBeforeDispose: _prepareForExitRelease,
-    );
-  }
-
-  void _togglePlayPause() {
-    if (_isLoading || _hasStreamError) return;
-    final c = _nativeCtrl;
-    if (c == null || !c.value.isInitialized) return;
-    setState(() { c.value.isPlaying ? c.pause() : c.play(); });
-    _wakelock();
-    _startControlsTimer();
-  }
-
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 2), backgroundColor: AppTheme.card));
-  }
-
-  void _handleKey(KeyEvent event) {
-    final label = event.logicalKey.keyLabel;
+  KeyEventResult _handlePlayerKey(FocusNode node, KeyEvent event) {
+    // Channel list has its own focus nodes — let them handle keys first.
+    if (_showChannelList) {
+      return KeyEventResult.ignored;
+    }
 
     if (event is KeyDownEvent) {
+      if (isTvBackKey(event)) {
+        unawaited(_handleBackPress());
+        return KeyEventResult.handled;
+      }
+
+      final label = event.logicalKey.keyLabel;
       if (RegExp(r'^[0-9]$').hasMatch(label)) {
         _handleNumberInput(label);
-        return;
+        return KeyEventResult.handled;
       }
-      // চ্যানেল লিস্ট খোলা থাকলে এই হ্যান্ডলার কাজ করবে না — লিস্টের ফোকাস নোড হ্যান্ডেল করবে
-      if (!_showChannelList) {
-        if (event.logicalKey == LogicalKeyboardKey.channelUp ||
-            event.logicalKey == LogicalKeyboardKey.pageUp ||
-            event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          _switchChannel(-1);
-          return;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.channelDown ||
-            event.logicalKey == LogicalKeyboardKey.pageDown ||
-            event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          _switchChannel(1);
-          return;
-        }
+
+      if (event.logicalKey == LogicalKeyboardKey.channelUp ||
+          event.logicalKey == LogicalKeyboardKey.pageUp ||
+          event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        _switchChannel(-1);
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.channelDown ||
+          event.logicalKey == LogicalKeyboardKey.pageDown ||
+          event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        _switchChannel(1);
+        return KeyEventResult.handled;
       }
 
       if (!_showControls) {
         setState(() => _showControls = true);
         _startControlsTimer();
-        return;
+        _restorePlayerFocus();
+        return KeyEventResult.handled;
       }
+
       _startControlsTimer();
-
-      if (event.logicalKey == LogicalKeyboardKey.escape ||
-          event.logicalKey == LogicalKeyboardKey.goBack) {
-        _invokeExitWidget();
-      }
     }
 
-    if (event is KeyUpEvent) {
-      if (!_showChannelList &&
-          (event.logicalKey == LogicalKeyboardKey.enter ||
-              event.logicalKey == LogicalKeyboardKey.select ||
-              event.logicalKey == LogicalKeyboardKey.space)) {
-        setState(() {
-          _showChannelList = true;
-          _showControls = true;
-        });
-        return;
-      }
+    if (event is KeyUpEvent &&
+        (event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.select ||
+            event.logicalKey == LogicalKeyboardKey.space)) {
+      setState(() {
+        _showChannelList = true;
+        _showControls = true;
+      });
+      _controlsTimer?.cancel();
+      return KeyEventResult.handled;
     }
+
+    return KeyEventResult.ignored;
   }
 
   @override
@@ -488,19 +489,19 @@ class _PlayerScreenState extends State<PlayerScreen>
     if (_appState == null) return const Scaffold(backgroundColor: Colors.black);
 
     final ch = _appState!.currentChannel;
-    final bool initialized = _nativeCtrl != null && _nativeCtrl!.value.isInitialized && !_hasStreamError;
-    final bool isLive = (_nativeCtrl?.value.duration == Duration.zero || _nativeCtrl?.value.duration == null);
+    final bool initialized =
+        _nativeCtrl != null && _nativeCtrl!.value.isInitialized && !_hasStreamError;
 
     return PopScope(
-      canPop: false, 
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        await _invokeExitWidget(); 
+        await _handleBackPress();
       },
-      child: KeyboardListener(
+      child: Focus(
         focusNode: _focus,
         autofocus: true,
-        onKeyEvent: _handleKey,
+        onKeyEvent: _handlePlayerKey,
         child: Scaffold(
           backgroundColor: Colors.black,
           body: GestureDetector(
@@ -520,7 +521,9 @@ class _PlayerScreenState extends State<PlayerScreen>
                       child: SizedBox(
                         width: _nativeCtrl!.value.size.width,
                         height: _nativeCtrl!.value.size.height,
-                        child: native_vp.VideoPlayer(_nativeCtrl!),
+                        child: ExcludeFocus(
+                          child: native_vp.VideoPlayer(_nativeCtrl!),
+                        ),
                       ),
                     ),
                   )
@@ -554,17 +557,11 @@ class _PlayerScreenState extends State<PlayerScreen>
                     onSelect: (i) {
                       setState(() => _showChannelList = false);
                       _switchToIndex(i);
-                      // চ্যানেল select হলে player focus নিশ্চিত করা
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _requestFocus();
-                      });
+                      _restorePlayerFocus();
                     },
                     onClose: () {
                       setState(() => _showChannelList = false);
-                      // প্যানেল বন্ধ হলে player root focus ফেরত
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _requestFocus();
-                      });
+                      _restorePlayerFocus();
                     },
                   ),
               ],

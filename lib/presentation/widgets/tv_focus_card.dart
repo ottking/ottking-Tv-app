@@ -12,6 +12,7 @@ class TvFocusCard extends StatefulWidget {
     required this.child,
     this.focusNode,
     this.onFocusChange,
+    this.onBack,
     this.selected = false,
     this.padding = const EdgeInsets.all(12),
     this.borderRadius = 14.0,
@@ -21,6 +22,7 @@ class TvFocusCard extends StatefulWidget {
   final Widget child;
   final FocusNode? focusNode;
   final ValueChanged<bool>? onFocusChange;
+  final VoidCallback? onBack;
   final bool selected;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
@@ -47,6 +49,7 @@ class _TvFocusCardState extends State<TvFocusCard> {
           widget.onFocusChange?.call(v);
         },
         onActivate: widget.onTap,
+        onBack: widget.onBack,
         builder: (context, focused) => GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(

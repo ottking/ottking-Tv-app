@@ -9,44 +9,83 @@ import '../../providers/app_state.dart';
 /// ১. গ্লোবাল অ্যাপ এক্সিট হ্যান্ডলার মেকানিজম
 /// ───────────────────────────────────────────────────────────────────────────
 class AppExitHandler {
+  /// Shows a TV-remote-friendly exit confirmation dialog.
+  static Future<bool> confirmExit(
+    BuildContext context, {
+    String title = 'Exit App',
+    String message = 'Do you want to exit the app?',
+  }) async {
+    if (!context.mounted) return false;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ExitConfirmDialog(title: title, message: message),
+    );
+    return result == true;
+  }
+
+  /// Home screen back — always ask before leaving the app.
+  static Future<void> handleHomeExit(BuildContext context) async {
+    if (!context.mounted) return;
+    final confirmed = await confirmExit(
+      context,
+      message: 'Do you want to exit OTTKing?',
+    );
+    if (confirmed && context.mounted) {
+      await SystemNavigator.pop();
+    }
+  }
+
+  /// Player screen back — always show a dialog (never silent navigation).
   static Future<void> handleExit({
     required BuildContext context,
     required AppState appState,
     required VoidCallback onBeforeDispose,
-    VoidCallback? onCancelled, // Dialog বাতিল হলে focus রিস্টোরের জন্য
+    VoidCallback? onCancelled,
   }) async {
-    final shouldFullExit = appState.isPlayerBootEnabled;
+    if (!context.mounted) return;
 
-    if (shouldFullExit) {
-      if (!context.mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (_) => _ExitConfirmDialog(),
-      );
+    final bootToPlayer = appState.isPlayerBootEnabled;
+    final confirmed = await confirmExit(
+      context,
+      title: bootToPlayer ? 'Exit App' : 'Leave Player',
+      message: bootToPlayer
+          ? 'Do you want to exit the app completely?'
+          : 'Leave live TV and go to the home screen?',
+    );
 
-      if (confirmed == true && context.mounted) {
-        onBeforeDispose();
-        try { await WakelockPlus.disable(); } catch (_) {}
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-        exit(0);
-      } else {
-        // Dialog বাতিল হলে (No বা back চাপলে) caller কে জানানো
-        onCancelled?.call();
-      }
-    } else {
-      onBeforeDispose();
-      try { await WakelockPlus.disable(); } catch (_) {}
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+    if (!confirmed) {
+      onCancelled?.call();
+      return;
+    }
+
+    if (!context.mounted) return;
+    onBeforeDispose();
+    try {
+      await WakelockPlus.disable();
+    } catch (_) {}
+
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+
+    if (bootToPlayer) {
+      exit(0);
+    } else if (context.mounted) {
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 }
 
 /// Exit confirm dialog — TV remote navigable
 class _ExitConfirmDialog extends StatefulWidget {
+  const _ExitConfirmDialog({
+    this.title = 'Exit App',
+    this.message = 'Do you want to exit the app completely?',
+  });
+
+  final String title;
+  final String message;
+
   @override
   State<_ExitConfirmDialog> createState() => _ExitConfirmDialogState();
 }
@@ -79,13 +118,13 @@ class _ExitConfirmDialogState extends State<_ExitConfirmDialog> {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: AppTheme.primary, width: 1.5),
       ),
-      title: const Text(
-        'Exit App',
-        style: TextStyle(color: Colors.white),
+      title: Text(
+        widget.title,
+        style: const TextStyle(color: Colors.white),
       ),
-      content: const Text(
-        'Do you want to exit the app completely?',
-        style: TextStyle(color: Colors.white70),
+      content: Text(
+        widget.message,
+        style: const TextStyle(color: Colors.white70),
       ),
       actions: [
         _DialogButton(

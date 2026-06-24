@@ -12,12 +12,16 @@ class ChannelGrid extends StatefulWidget {
     required this.chNodes,
     required this.appState,
     required this.categoryName,
+    this.onBack,
+    this.onFocusIndex,
   });
 
   final List channels;
   final List<FocusNode> chNodes;
   final AppState appState;
   final String categoryName;
+  final Future<void> Function()? onBack;
+  final ValueChanged<int>? onFocusIndex;
 
   @override
   State<ChannelGrid> createState() => _ChannelGridState();
@@ -101,9 +105,10 @@ class _ChannelGridState extends State<ChannelGrid> {
                       focusNode: widget.chNodes[i],
                       selected: playing,
                       padding: EdgeInsets.zero,
+                      onBack: widget.onBack == null ? null : () { widget.onBack!(); },
                       onFocusChange: (hasFocus) {
                         if (hasFocus) {
-                          // ফোকাস হলে গ্রিড আইটেম স্ক্রিনে দৃশ্যমান করা
+                          widget.onFocusIndex?.call(i);
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (widget.chNodes[i].context != null) {
                               Scrollable.ensureVisible(
