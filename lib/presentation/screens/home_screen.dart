@@ -48,12 +48,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // RouteAware সাবস্ক্রাইব — routeObserver অ্যাপের MaterialApp.navigatorObservers এ থাকতে হবে
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    HomeScreen.routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this);
+    HomeScreen.routeObserver.unsubscribe(this);
     _rootFocusNode.dispose();
     _settingsFocusNode.dispose();
     _clearCatNodes();

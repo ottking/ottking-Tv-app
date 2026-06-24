@@ -101,7 +101,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     // RouteAware সাবস্ক্রাইব
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    PlayerScreen.routeObserver.subscribe(this, ModalRoute.of(context)!);
 
     final nextState = context.watch<AppState>();
     if (_appState != null && _activeChannelId != null) {
@@ -475,7 +475,7 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this);
+    PlayerScreen.routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     _prepareForExitRelease();
     _focus.dispose();

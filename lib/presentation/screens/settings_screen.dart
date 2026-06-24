@@ -53,12 +53,12 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // RouteAware সাবস্ক্রাইব
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    SettingsScreen.routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this);
+    SettingsScreen.routeObserver.unsubscribe(this);
     _rootFocusNode.dispose();
     _firstSidebarNode.dispose();
     super.dispose();
