@@ -27,6 +27,10 @@ class _SecurePlayerHttpOverrides extends HttpOverrides {
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
 
+  // RouteObserver — app.dart এ MaterialApp.navigatorObservers এ পাস করতে হবে
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
@@ -34,10 +38,6 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen>
     with WidgetsBindingObserver, RouteAware {
   final FocusNode _focus = FocusNode(debugLabel: 'player-root');
-
-  // PlayerScreen এর RouteObserver — app.dart এ navigatorObservers এ পাস করতে হবে
-  static final RouteObserver<ModalRoute<void>> routeObserver =
-      RouteObserver<ModalRoute<void>>();
 
   native_vp.VideoPlayerController? _nativeCtrl;
   VoidCallback? _nativeCtrlListener;
@@ -120,7 +120,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   @override
   void didPopNext() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_focus.disposed) {
+      if (mounted) {
         _focus.requestFocus();
         _startControlsTimer();
       }
@@ -305,7 +305,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   }
 
   void _requestFocus() {
-    if (mounted && !_focus.disposed) {
+    if (mounted) {
       _focus.requestFocus();
     }
   }
@@ -377,7 +377,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       ),
     ).then((_) {
       // Dialog বন্ধ হলে player root focus রিস্টোর
-      if (mounted && !_focus.disposed) {
+      if (mounted) {
         _focus.requestFocus();
         _startControlsTimer();
       }
@@ -390,7 +390,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       builder: (_) => const AppInfoDialog(),
     ).then((_) {
       // Dialog বন্ধ হলে player root focus রিস্টোর
-      if (mounted && !_focus.disposed) {
+      if (mounted) {
         _focus.requestFocus();
         _startControlsTimer();
       }
@@ -478,7 +478,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     _prepareForExitRelease();
-    if (!_focus.disposed) _focus.dispose();
+    _focus.dispose();
     HttpOverrides.global = null;
     super.dispose();
   }

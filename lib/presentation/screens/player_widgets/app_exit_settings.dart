@@ -66,8 +66,8 @@ class _ExitConfirmDialogState extends State<_ExitConfirmDialog> {
 
   @override
   void dispose() {
-    if (!_noNode.disposed) _noNode.dispose();
-    if (!_yesNode.disposed) _yesNode.dispose();
+    _noNode.dispose();
+    _yesNode.dispose();
     super.dispose();
   }
 
@@ -225,7 +225,7 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
   @override
   void dispose() {
     for (final n in _focusNodes) {
-      if (!n.disposed) n.dispose();
+      n.dispose();
     }
     super.dispose();
   }

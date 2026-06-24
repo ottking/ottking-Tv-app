@@ -17,6 +17,10 @@ enum _Section { account, tvSettings, system }
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  // RouteObserver — app.dart এ MaterialApp.navigatorObservers এ পাস করতে হবে
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -27,10 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   // সাইডবারের প্রথম আইটেমে ফোকাস নিয়ে যাওয়ার জন্য
   final FocusNode _firstSidebarNode = FocusNode(debugLabel: 'settings-first-nav');
   _Section _activeSection = _Section.account;
-
-  // SettingsScreen এর RouteObserver — app.dart এ navigatorObservers এ পাস করতে হবে
-  static final RouteObserver<ModalRoute<void>> routeObserver =
-      RouteObserver<ModalRoute<void>>();
 
   @override
   void initState() {
@@ -59,8 +59,8 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
-    if (!_rootFocusNode.disposed) _rootFocusNode.dispose();
-    if (!_firstSidebarNode.disposed) _firstSidebarNode.dispose();
+    _rootFocusNode.dispose();
+    _firstSidebarNode.dispose();
     super.dispose();
   }
 
@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   @override
   void didPopNext() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_firstSidebarNode.disposed) {
+      if (mounted) {
         _firstSidebarNode.requestFocus();
       }
     });
@@ -88,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   }
 
   void _requestSidebarFocus() {
-    if (mounted && !_firstSidebarNode.disposed) {
+    if (mounted) {
       _firstSidebarNode.requestFocus();
     }
   }

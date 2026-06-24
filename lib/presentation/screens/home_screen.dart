@@ -11,6 +11,10 @@ import 'home_screen_widgets/channel_grid.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  // RouteObserver — app.dart এ MaterialApp.navigatorObservers এ পাস করতে হবে
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -18,10 +22,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final FocusNode _rootFocusNode = FocusNode(debugLabel: 'home-root');
   final FocusNode _settingsFocusNode = FocusNode(debugLabel: 'home-settings');
-
-  // HomeScreen এর RouteObserver — app.dart এ NavigatorObserver হিসেবে পাস করতে হবে
-  static final RouteObserver<ModalRoute<void>> routeObserver =
-      RouteObserver<ModalRoute<void>>();
 
   int _selectedCategoryIndex = 0;
 
@@ -54,8 +54,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
-    if (!_rootFocusNode.disposed) _rootFocusNode.dispose();
-    if (!_settingsFocusNode.disposed) _settingsFocusNode.dispose();
+    _rootFocusNode.dispose();
+    _settingsFocusNode.dispose();
     _clearCatNodes();
     _clearChNodes();
     super.dispose();
@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   @override
   void didPopNext() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_settingsFocusNode.disposed) {
+      if (mounted) {
         _settingsFocusNode.requestFocus();
       }
     });
@@ -73,14 +73,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   void _clearCatNodes() {
     for (final n in _catNodes) {
-      if (!n.disposed) n.dispose();
+      n.dispose();
     }
     _catNodes.clear();
   }
 
   void _clearChNodes() {
     for (final n in _chNodes) {
-      if (!n.disposed) n.dispose();
+      n.dispose();
     }
     _chNodes.clear();
   }
@@ -108,19 +108,19 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   void _requestSettingsFocus() {
-    if (mounted && !_settingsFocusNode.disposed) {
+    if (mounted) {
       _settingsFocusNode.requestFocus();
     }
   }
 
   void _requestCategoryFocus(int index) {
-    if (_catNodes.length > index && mounted && !_catNodes[index].disposed) {
+    if (_catNodes.length > index && mounted) {
       _catNodes[index].requestFocus();
     }
   }
 
   void _requestGridFocus(int index) {
-    if (_chNodes.length > index && mounted && !_chNodes[index].disposed) {
+    if (_chNodes.length > index && mounted) {
       _chNodes[index].requestFocus();
     }
   }
