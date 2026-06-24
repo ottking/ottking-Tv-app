@@ -15,9 +15,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final FocusNode _rootFocusNode = FocusNode(debugLabel: 'home-root');
   final FocusNode _settingsFocusNode = FocusNode(debugLabel: 'home-settings');
+
+  // HomeScreen এর RouteObserver — app.dart এ NavigatorObserver হিসেবে পাস করতে হবে
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
 
   int _selectedCategoryIndex = 0;
 
@@ -41,7 +45,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // RouteAware সাবস্ক্রাইব — routeObserver অ্যাপের MaterialApp.navigatorObservers এ থাকতে হবে
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     if (!_rootFocusNode.disposed) _rootFocusNode.dispose();
     if (!_settingsFocusNode.disposed) _settingsFocusNode.dispose();
     _clearCatNodes();
@@ -49,13 +61,14 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Player বা Settings থেকে ফিরে এলে settings বাটনে ফোকাস রিস্টোর
   @override
   void didPopNext() {
-    super.didPopNext();
-    // Restore focus to settings button when returning from player/settings
-    if (mounted && !_settingsFocusNode.disposed) {
-      _settingsFocusNode.requestFocus();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_settingsFocusNode.disposed) {
+        _settingsFocusNode.requestFocus();
+      }
+    });
   }
 
   void _clearCatNodes() {
@@ -123,12 +136,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _requestCategoryFocus(int index) {
-    if (_catNodes.length > index && mounted && !_catNodes[index].disposed) {
-      _catNodes[index].requestFocus();
-    }
-  }
-
   void _moveFocusToGrid() {
     _requestGridFocus(0);
   }
@@ -142,8 +149,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _moveFocusFromSettingsToSidebar() {
     _requestCategoryFocus(_selectedCategoryIndex);
   }
-
-  void _oldMoveFocusToGrid() {
 
   @override
   Widget build(BuildContext context) {

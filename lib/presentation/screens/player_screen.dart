@@ -31,8 +31,13 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver {
+class _PlayerScreenState extends State<PlayerScreen>
+    with WidgetsBindingObserver, RouteAware {
   final FocusNode _focus = FocusNode(debugLabel: 'player-root');
+
+  // PlayerScreen এর RouteObserver — app.dart এ navigatorObservers এ পাস করতে হবে
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
 
   native_vp.VideoPlayerController? _nativeCtrl;
   VoidCallback? _nativeCtrlListener;
@@ -66,6 +71,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         _retryCount = 0;
         _initController();
       }
+      // App resume হলে player focus রিস্টোর
+      _requestFocus();
     } else if (state == AppLifecycleState.paused) {
       _nativeCtrl?.pause();
     }
@@ -93,6 +100,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // RouteAware সাবস্ক্রাইব
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+
     final nextState = context.watch<AppState>();
     if (_appState != null && _activeChannelId != null) {
       final nextChannelId = nextState.channels.isNotEmpty 
@@ -104,6 +114,17 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       }
     }
     _appState = nextState;
+  }
+
+  /// Settings dialog বা অন্য screen থেকে ফিরে এলে player focus রিস্টোর
+  @override
+  void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_focus.disposed) {
+        _focus.requestFocus();
+        _startControlsTimer();
+      }
+    });
   }
 
   void _forceFullLandscape() {
@@ -231,6 +252,8 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
           _isLoading = false;
           _hasStreamError = false;
         });
+        // Controller init হওয়ার পর player focus নিশ্চিত করা
+        _requestFocus();
       }
     } catch (e) {
       if (_currentInitTimestamp == thisInitTimestamp && mounted) {
@@ -353,9 +376,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         ),
       ),
     ).then((_) {
-      // Restore focus safely after dialog closes
+      // Dialog বন্ধ হলে player root focus রিস্টোর
       if (mounted && !_focus.disposed) {
-        _focus.requestFocus(); 
+        _focus.requestFocus();
         _startControlsTimer();
       }
     });
@@ -365,10 +388,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     showDialog(
       context: context,
       builder: (_) => const AppInfoDialog(),
-    ).then((_) { 
-      // Restore focus safely after dialog closes
+    ).then((_) {
+      // Dialog বন্ধ হলে player root focus রিস্টোর
       if (mounted && !_focus.disposed) {
-        _focus.requestFocus(); 
+        _focus.requestFocus();
         _startControlsTimer();
       }
     });
@@ -452,20 +475,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     _prepareForExitRelease();
     if (!_focus.disposed) _focus.dispose();
     HttpOverrides.global = null;
     super.dispose();
-  }
-
-  @override
-  void didPopNext() {
-    super.didPopNext();
-    // Focus restored when returning to player from other screens
-    if (mounted && !_focus.disposed) {
-      _focus.requestFocus();
-    }
   }
 
   @override
@@ -539,12 +554,17 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     onSelect: (i) {
                       setState(() => _showChannelList = false);
                       _switchToIndex(i);
-                      _requestFocus();
+                      // চ্যানেল select হলে player focus নিশ্চিত করা
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _requestFocus();
+                      });
                     },
                     onClose: () {
                       setState(() => _showChannelList = false);
                       // প্যানেল বন্ধ হলে player root focus ফেরত
-                      _requestFocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _requestFocus();
+                      });
                     },
                   ),
               ],

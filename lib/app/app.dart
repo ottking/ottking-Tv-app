@@ -25,6 +25,12 @@ class OttKingApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       initialRoute: '/splash',
+      // RouteObserver গুলো রেজিস্টার করা — didPopNext কাজ করার জন্য অপরিহার্য
+      navigatorObservers: [
+        HomeScreen.routeObserver,
+        PlayerScreen.routeObserver,
+        SettingsScreen.routeObserver,
+      ],
       routes: {
         '/splash': (_) => const SplashScreen(),
         '/home': (_) => const HomeScreen(),

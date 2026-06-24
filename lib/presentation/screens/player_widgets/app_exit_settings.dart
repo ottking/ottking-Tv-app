@@ -13,6 +13,7 @@ class AppExitHandler {
     required BuildContext context,
     required AppState appState,
     required VoidCallback onBeforeDispose,
+    VoidCallback? onCancelled, // Dialog বাতিল হলে focus রিস্টোরের জন্য
   }) async {
     final shouldFullExit = appState.isPlayerBootEnabled;
 
@@ -20,31 +21,7 @@ class AppExitHandler {
       if (!context.mounted) return;
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
-          backgroundColor: Colors.black.withOpacity(0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: AppTheme.primary, width: 1.5),
-          ),
-          title: const Text(
-            'Exit App',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            'Do you want to exit the app completely?',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('No', style: TextStyle(color: Colors.white54)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text('Yes', style: TextStyle(color: AppTheme.primary)),
-            ),
-          ],
-        ),
+        builder: (_) => _ExitConfirmDialog(),
       );
 
       if (confirmed == true && context.mounted) {
@@ -53,6 +30,9 @@ class AppExitHandler {
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
         SystemChrome.setPreferredOrientations(DeviceOrientation.values);
         exit(0);
+      } else {
+        // Dialog বাতিল হলে (No বা back চাপলে) caller কে জানানো
+        onCancelled?.call();
       }
     } else {
       onBeforeDispose();
@@ -62,6 +42,139 @@ class AppExitHandler {
         Navigator.pushReplacementNamed(context, '/home');
       }
     }
+  }
+}
+
+/// Exit confirm dialog — TV remote navigable
+class _ExitConfirmDialog extends StatefulWidget {
+  @override
+  State<_ExitConfirmDialog> createState() => _ExitConfirmDialogState();
+}
+
+class _ExitConfirmDialogState extends State<_ExitConfirmDialog> {
+  final FocusNode _noNode = FocusNode(debugLabel: 'exit-no');
+  final FocusNode _yesNode = FocusNode(debugLabel: 'exit-yes');
+
+  @override
+  void initState() {
+    super.initState();
+    // Dialog খুললে "No" বাটনে ফোকাস (safe default)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _noNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    if (!_noNode.disposed) _noNode.dispose();
+    if (!_yesNode.disposed) _yesNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.black.withOpacity(0.95),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppTheme.primary, width: 1.5),
+      ),
+      title: const Text(
+        'Exit App',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: const Text(
+        'Do you want to exit the app completely?',
+        style: TextStyle(color: Colors.white70),
+      ),
+      actions: [
+        _DialogButton(
+          focusNode: _noNode,
+          label: 'No',
+          color: Colors.white54,
+          onPressed: () => Navigator.pop(context, false),
+          // No থেকে → Yes তে যাওয়ার জন্য
+          onRight: () => _yesNode.requestFocus(),
+        ),
+        _DialogButton(
+          focusNode: _yesNode,
+          label: 'Yes',
+          color: AppTheme.primary,
+          onPressed: () => Navigator.pop(context, true),
+          // Yes থেকে ← No তে যাওয়ার জন্য
+          onLeft: () => _noNode.requestFocus(),
+        ),
+      ],
+    );
+  }
+}
+
+class _DialogButton extends StatefulWidget {
+  const _DialogButton({
+    required this.focusNode,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+    this.onLeft,
+    this.onRight,
+  });
+  final FocusNode focusNode;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+  final VoidCallback? onLeft;
+  final VoidCallback? onRight;
+
+  @override
+  State<_DialogButton> createState() => _DialogButtonState();
+}
+
+class _DialogButtonState extends State<_DialogButton> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: widget.focusNode,
+      onFocusChange: (v) => setState(() => _focused = v),
+      onKeyEvent: (_, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.select) {
+          widget.onPressed();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          widget.onLeft?.call();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          widget.onRight?.call();
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.goBack) {
+          Navigator.pop(context, false);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: _focused ? widget.color.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _focused ? widget.color : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: TextButton(
+          onPressed: widget.onPressed,
+          child: Text(widget.label, style: TextStyle(color: widget.color)),
+        ),
+      ),
+    );
   }
 }
 
@@ -103,7 +216,7 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_focusNodes.isNotEmpty) {
+      if (mounted && _focusNodes.isNotEmpty) {
         _focusNodes[0].requestFocus();
       }
     });
@@ -111,7 +224,9 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
 
   @override
   void dispose() {
-    for (final n in _focusNodes) n.dispose();
+    for (final n in _focusNodes) {
+      if (!n.disposed) n.dispose();
+    }
     super.dispose();
   }
 

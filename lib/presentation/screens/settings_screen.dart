@@ -21,12 +21,16 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   // KeyboardListener এর FocusNode — autofocus: false রাখতে হবে
   final FocusNode _rootFocusNode = FocusNode(debugLabel: 'settings-root');
   // সাইডবারের প্রথম আইটেমে ফোকাস নিয়ে যাওয়ার জন্য
   final FocusNode _firstSidebarNode = FocusNode(debugLabel: 'settings-first-nav');
   _Section _activeSection = _Section.account;
+
+  // SettingsScreen এর RouteObserver — app.dart এ navigatorObservers এ পাস করতে হবে
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
 
   @override
   void initState() {
@@ -46,19 +50,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // RouteAware সাবস্ক্রাইব
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     if (!_rootFocusNode.disposed) _rootFocusNode.dispose();
     if (!_firstSidebarNode.disposed) _firstSidebarNode.dispose();
     super.dispose();
   }
 
+  /// Dialog বা sub-screen থেকে ফিরে এলে sidebar focus রিস্টোর
   @override
   void didPopNext() {
-    super.didPopNext();
-    // Restore focus to first sidebar item when returning to settings
-    if (mounted && !_firstSidebarNode.disposed) {
-      _firstSidebarNode.requestFocus();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_firstSidebarNode.disposed) {
+        _firstSidebarNode.requestFocus();
+      }
+    });
   }
 
   void _handleKey(KeyEvent event) {
@@ -82,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _selectSection(int index) {
     setState(() => _activeSection = _Section.values[index]);
-    // Restore focus to first nav item to maintain focus hierarchy
+    // Section switch হলে sidebar focus রিস্টোর
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestSidebarFocus();
     });
