@@ -7,8 +7,17 @@ import '../../providers/app_state.dart';
 import 'settings_shared_widgets.dart';
 
 class SettingsSystemSection extends StatelessWidget {
-  const SettingsSystemSection({super.key, required this.appState});
+  const SettingsSystemSection({
+    super.key,
+    required this.appState,
+    required this.cardFocusNodes,
+    required this.onReturnToSidebar,
+    required this.onScreenBack,
+  });
   final AppState appState;
+  final List<FocusNode> cardFocusNodes;
+  final VoidCallback onReturnToSidebar;
+  final VoidCallback onScreenBack;
 
   void _refreshCatalog(BuildContext context) {
     appState.loadCatalog();
@@ -44,17 +53,21 @@ class SettingsSystemSection extends StatelessWidget {
           children: [
             // ── ১. ক্যাটালগ রিফ্রেশ ──────────────────────────────────────────
             SettingCard(
+              focusNode: cardFocusNodes.isNotEmpty ? cardFocusNodes[0] : null,
               icon: Icons.sync_rounded,
               title: 'Catalog Refresh',
               subtitle: 'Update channel list',
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               onTap: () => _refreshCatalog(context),
             ),
-
-            // ── ২. অ্যাপ আপডেট ────────────────────────────────────────────
             SettingCard(
+              focusNode: cardFocusNodes.length > 1 ? cardFocusNodes[1] : null,
               icon: Icons.system_update_rounded,
               title: 'App Update',
               subtitle: 'Check for new version',
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               onTap: () => _checkForUpdates(context),
             ),
           ],
@@ -67,20 +80,24 @@ class SettingsSystemSection extends StatelessWidget {
           children: [
             // ── ৩. ডেভেলপার ────────────────────────────────────────────────
             SettingCard(
+              focusNode: cardFocusNodes.length > 2 ? cardFocusNodes[2] : null,
               icon: Icons.code_rounded,
               title: 'Developer',
               subtitle: 'App development & support',
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => const _DeveloperDialog(),
               ),
             ),
-
-            // ── ৪. অ্যাপ তথ্য ──────────────────────────────────────────────
             SettingCard(
+              focusNode: cardFocusNodes.length > 3 ? cardFocusNodes[3] : null,
               icon: Icons.info_outline_rounded,
               title: 'App Information',
               subtitle: 'Version and system information',
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => const _AppInfoDialog(),
@@ -139,26 +156,10 @@ class _DeveloperDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        TextButton(
+        TvDialogAction(
+          label: 'বন্ধ',
           autofocus: true,
-          style: TextButton.styleFrom(
-            foregroundColor: AppTheme.primary,
-            backgroundColor: Colors.transparent,
-          ).copyWith(
-            overlayColor: WidgetStateProperty.resolveWith<Color?>(
-              (Set<WidgetState> states) {
-                if (states.contains(WidgetState.focused)) {
-                  return AppTheme.primary.withOpacity(0.15);
-                }
-                return null;
-              },
-            ),
-          ),
           onPressed: () => Navigator.pop(context),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('বন্ধ', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
         ),
       ],
     );
@@ -209,26 +210,10 @@ class _AppInfoDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        TextButton(
+        TvDialogAction(
+          label: 'Close',
           autofocus: true,
-          style: TextButton.styleFrom(
-            foregroundColor: AppTheme.primary,
-            backgroundColor: Colors.transparent,
-          ).copyWith(
-            overlayColor: WidgetStateProperty.resolveWith<Color?>(
-              (Set<WidgetState> states) {
-                if (states.contains(WidgetState.focused)) {
-                  return AppTheme.primary.withOpacity(0.15);
-                }
-                return null;
-              },
-            ),
-          ),
           onPressed: () => Navigator.pop(context),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
         ),
       ],
     );

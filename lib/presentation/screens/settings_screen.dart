@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
+import '../widgets/tv_focus_utils.dart';
 import 'settings_screen_widgets/settings_nav_sidebar.dart';
 import 'settings_screen_widgets/settings_account_section.dart';
 import 'settings_screen_widgets/settings_tv_section.dart';
@@ -17,7 +17,6 @@ enum _Section { account, tvSettings, system }
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
-  // RouteObserver — app.dart এ MaterialApp.navigatorObservers এ পাস করতে হবে
   static final RouteObserver<ModalRoute<void>> routeObserver =
       RouteObserver<ModalRoute<void>>();
 
@@ -26,10 +25,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
-  // KeyboardListener এর FocusNode — autofocus: false রাখতে হবে
-  final FocusNode _rootFocusNode = FocusNode(debugLabel: 'settings-root');
-  // সাইডবারের প্রথম আইটেমে ফোকাস নিয়ে যাওয়ার জন্য
   final FocusNode _firstSidebarNode = FocusNode(debugLabel: 'settings-first-nav');
+  final List<FocusNode> _cardFocusNodes = [];
   _Section _activeSection = _Section.account;
 
   @override
@@ -41,7 +38,6 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    // স্ক্রিন লোড হলে সাইডবারের প্রথম আইটেমে ফোকাস
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _firstSidebarNode.requestFocus();
@@ -52,34 +48,22 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // RouteAware সাবস্ক্রাইব
     SettingsScreen.routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
     SettingsScreen.routeObserver.unsubscribe(this);
-    _rootFocusNode.dispose();
     _firstSidebarNode.dispose();
+    for (final node in _cardFocusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 
-  /// Dialog বা sub-screen থেকে ফিরে এলে sidebar focus রিস্টোর
   @override
   void didPopNext() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _firstSidebarNode.requestFocus();
-      }
-    });
-  }
-
-  void _handleKey(KeyEvent event) {
-    if (event is! KeyDownEvent) return;
-    if (event.logicalKey == LogicalKeyboardKey.escape ||
-        event.logicalKey == LogicalKeyboardKey.goBack) {
-      _safelyPop();
-    }
+    restoreFocusAfterFrame(_firstSidebarNode, ifMounted: () => mounted);
   }
 
   void _safelyPop() {
@@ -95,68 +79,93 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
 
   void _selectSection(int index) {
     setState(() => _activeSection = _Section.values[index]);
-    // Section switch হলে sidebar focus রিস্টোর
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestSidebarFocus();
-    });
+  }
+
+  int _cardCountForSection() {
+    switch (_activeSection) {
+      case _Section.account:
+        return 2;
+      case _Section.tvSettings:
+        return 1;
+      case _Section.system:
+        return 4;
+    }
+  }
+
+  void _syncCardFocusNodes(int count) {
+    while (_cardFocusNodes.length < count) {
+      _cardFocusNodes.add(
+        FocusNode(debugLabel: 'settings-card-${_cardFocusNodes.length}'),
+      );
+    }
+    while (_cardFocusNodes.length > count) {
+      _cardFocusNodes.removeLast().dispose();
+    }
+  }
+
+  void _focusFirstContent() {
+    _syncCardFocusNodes(_cardCountForSection());
+    if (_cardFocusNodes.isNotEmpty && mounted) {
+      _cardFocusNodes[0].requestFocus();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    _syncCardFocusNodes(_cardCountForSection());
+
+    final navCallbacks = (
+      onReturnToSidebar: _requestSidebarFocus,
+      onScreenBack: _safelyPop,
+    );
 
     return PopScope(
-      canPop: true,
-      child: KeyboardListener(
-        focusNode: _rootFocusNode,
-        // autofocus: false — সাইডবারের ফোকাস নোডে সঠিকভাবে ফোকাস যাবে
-        autofocus: false,
-        onKeyEvent: _handleKey,
-        child: Scaffold(
-          backgroundColor: const Color(0xFF0B0F19),
-          body: Row(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _safelyPop();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0B0F19),
+        body: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Row(
             children: [
-              // ── Left Sidebar ──────────────────────────────────────────
-          
-              FocusTraversalGroup(
-                policy: OrderedTraversalPolicy(),
-                child: SettingsNavSidebar(
-                  activeSection: _activeSection.index,
-                  firstFocusNode: _firstSidebarNode,
-                  onSelect: _selectSection,
-                  onBack: _safelyPop,
-                ),
+              SettingsNavSidebar(
+                activeSection: _activeSection.index,
+                firstFocusNode: _firstSidebarNode,
+                onSelect: _selectSection,
+                onBack: _safelyPop,
+                onMoveToContent: _focusFirstContent,
               ),
-
               Container(
                 width: 1,
                 color: Colors.white.withOpacity(0.05),
               ),
-
-              // ── Right Content Area ────────────────────────────────────
               Expanded(
                 child: SafeArea(
-                  child: FocusTraversalGroup(
-                    policy: WidgetOrderTraversalPolicy(),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 48,
-                        vertical: 32,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: _buildActiveSection(appState),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 48,
+                      vertical: 32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: _buildActiveSection(
+                            appState,
+                            navCallbacks,
+                            _cardFocusNodes,
                           ),
-                          const SizedBox(height: 40),
-                          Divider(color: Colors.white.withOpacity(0.05)),
-                          const SizedBox(height: 16),
-                          SettingsStatusFooter(appState: appState),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 40),
+                        Divider(color: Colors.white.withOpacity(0.05)),
+                        const SizedBox(height: 16),
+                        SettingsStatusFooter(appState: appState),
+                      ],
                     ),
                   ),
                 ),
@@ -168,14 +177,36 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
     );
   }
 
-  Widget _buildActiveSection(AppState appState) {
+  Widget _buildActiveSection(
+    AppState appState,
+    ({VoidCallback onReturnToSidebar, VoidCallback onScreenBack}) nav,
+    List<FocusNode> cardFocusNodes,
+  ) {
     switch (_activeSection) {
       case _Section.account:
-        return SettingsAccountSection(key: const ValueKey('account'), appState: appState);
+        return SettingsAccountSection(
+          key: const ValueKey('account'),
+          appState: appState,
+          cardFocusNodes: cardFocusNodes,
+          onReturnToSidebar: nav.onReturnToSidebar,
+          onScreenBack: nav.onScreenBack,
+        );
       case _Section.tvSettings:
-        return SettingsTvSection(key: const ValueKey('tv'), appState: appState);
+        return SettingsTvSection(
+          key: const ValueKey('tv'),
+          appState: appState,
+          cardFocusNodes: cardFocusNodes,
+          onReturnToSidebar: nav.onReturnToSidebar,
+          onScreenBack: nav.onScreenBack,
+        );
       case _Section.system:
-        return SettingsSystemSection(key: const ValueKey('system'), appState: appState);
+        return SettingsSystemSection(
+          key: const ValueKey('system'),
+          appState: appState,
+          cardFocusNodes: cardFocusNodes,
+          onReturnToSidebar: nav.onReturnToSidebar,
+          onScreenBack: nav.onScreenBack,
+        );
     }
   }
 }

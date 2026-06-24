@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../widgets/tv_focus_utils.dart';
 
 class SettingsNavSidebar extends StatefulWidget {
   const SettingsNavSidebar({
@@ -11,13 +12,15 @@ class SettingsNavSidebar extends StatefulWidget {
     required this.activeSection,
     required this.onSelect,
     required this.onBack,
-    this.firstFocusNode, // বাইরে থেকে প্রথম ফোকাস নোড পাস করার সুযোগ
+    this.firstFocusNode,
+    this.onMoveToContent,
   });
 
   final int activeSection;
   final ValueChanged<int> onSelect;
   final VoidCallback onBack;
   final FocusNode? firstFocusNode;
+  final VoidCallback? onMoveToContent;
 
   @override
   State<SettingsNavSidebar> createState() => _SettingsNavSidebarState();
@@ -130,6 +133,8 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
                 hint: item.hint,
                 isActive: isActive,
                 onTap: () => widget.onSelect(i),
+                onBack: widget.onBack,
+                onMoveToContent: widget.onMoveToContent,
                 // প্রথম আইটেম থেকে উপরে গেলে ব্যাক বাটনে ফোকাস
                 onKeyEvent: i == 0
                     ? (event) {
@@ -192,6 +197,10 @@ class _BackButtonState extends State<_BackButton> {
       focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onKeyEvent: (_, event) {
+        if (isTvBackKey(event)) {
+          widget.onTap();
+          return KeyEventResult.handled;
+        }
         if (event is KeyDownEvent &&
             (event.logicalKey == LogicalKeyboardKey.enter ||
                 event.logicalKey == LogicalKeyboardKey.select)) {
@@ -235,6 +244,8 @@ class _NavItem extends StatefulWidget {
     required this.hint,
     required this.isActive,
     required this.onTap,
+    required this.onBack,
+    this.onMoveToContent,
     this.onKeyEvent,
   });
   final FocusNode focusNode;
@@ -243,6 +254,8 @@ class _NavItem extends StatefulWidget {
   final String hint;
   final bool isActive;
   final VoidCallback onTap;
+  final VoidCallback onBack;
+  final VoidCallback? onMoveToContent;
   final KeyEventResult Function(KeyEvent)? onKeyEvent;
 
   @override
@@ -264,16 +277,19 @@ class _NavItemState extends State<_NavItem> {
           if (v) widget.onTap(); // ফোকাস হলেই সেকশন সুইচ
         },
         onKeyEvent: (_, event) {
+          if (isTvBackKey(event)) {
+            widget.onBack();
+            return KeyEventResult.handled;
+          }
           if (event is KeyDownEvent &&
               (event.logicalKey == LogicalKeyboardKey.enter ||
                   event.logicalKey == LogicalKeyboardKey.select)) {
             widget.onTap();
             return KeyEventResult.handled;
           }
-          // ডানে গেলে কনটেন্ট এরিয়ায় ফোকাস (Flutter ট্র্যাভার্সাল হ্যান্ডেল করবে)
           if (event is KeyDownEvent &&
               event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            FocusScope.of(context).nextFocus();
+            widget.onMoveToContent?.call();
             return KeyEventResult.handled;
           }
           return widget.onKeyEvent?.call(event) ?? KeyEventResult.ignored;

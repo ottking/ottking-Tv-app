@@ -10,14 +10,14 @@ class ChannelListPanel extends StatefulWidget {
     required this.currentIndex,
     required this.onSettings,
     required this.onSelect,
-    required this.onClose,
+    required this.onDismiss,
   });
 
   final List channels;
   final int currentIndex;
   final VoidCallback onSettings;
   final ValueChanged<int> onSelect;
-  final VoidCallback onClose;
+  final VoidCallback onDismiss;
 
   @override
   State<ChannelListPanel> createState() => _ChannelListPanelState();
@@ -26,7 +26,7 @@ class ChannelListPanel extends StatefulWidget {
 class _ChannelListPanelState extends State<ChannelListPanel> {
   final ScrollController _scrollController = ScrollController();
   late final List<FocusNode> _itemNodes;
-  final FocusNode _closeBtnNode = FocusNode(debugLabel: 'ch-list-close');
+  final FocusNode _settingsBtnNode = FocusNode(debugLabel: 'ch-list-settings');
 
   @override
   void initState() {
@@ -37,16 +37,14 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
       (i) => FocusNode(debugLabel: 'ch-list-item-$i'),
     );
 
-    // প্যানেল render হওয়ার পরেই ফোকাস ও স্ক্রোল করতে হবে
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _itemNodes.isEmpty) return;
 
       final idx = widget.currentIndex.clamp(0, _itemNodes.length - 1);
       _itemNodes[idx].requestFocus();
 
-      // ScrollController attached কিনা নিশ্চিত করে তারপর scroll
       if (_scrollController.hasClients) {
-        final itemHeight = 50.0;
+        const itemHeight = 50.0;
         final targetOffset = (idx * itemHeight) - 150;
         final maxOffset = _scrollController.position.maxScrollExtent;
         _scrollController.animateTo(
@@ -61,7 +59,7 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
   @override
   void dispose() {
     _scrollController.dispose();
-    _closeBtnNode.dispose();
+    _settingsBtnNode.dispose();
     for (final n in _itemNodes) {
       n.dispose();
     }
@@ -84,7 +82,6 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
         ),
         child: Column(
           children: [
-            // ── Header ─────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
@@ -101,13 +98,8 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
                   ),
                   const Spacer(),
                   _SettingsFocusButton(
+                    focusNode: _settingsBtnNode,
                     onSettings: widget.onSettings,
-                  ),
-                  const SizedBox(width: 8),
-                  // ── Close button — ফোকাসযোগ্য ─────────────────
-                  _CloseFocusButton(
-                    focusNode: _closeBtnNode,
-                    onClose: widget.onClose,
                     onDown: () {
                       if (_itemNodes.isNotEmpty) _itemNodes[0].requestFocus();
                     },
@@ -115,8 +107,6 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
                 ],
               ),
             ),
-
-            // ── Channel List ────────────────────────────────────────
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -132,13 +122,12 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
                     channelName: ch.name,
                     isActive: isActive,
                     onSelect: () => widget.onSelect(i),
-                    onClose: widget.onClose,
-                    // First item from ↑ goes to close button
+                    onDismiss: widget.onDismiss,
                     onKeyEvent: i == 0
                         ? (event) {
                             if (event is KeyDownEvent &&
                                 event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                              _closeBtnNode.requestFocus();
+                              _settingsBtnNode.requestFocus();
                               return KeyEventResult.handled;
                             }
                             return KeyEventResult.ignored;
@@ -155,75 +144,16 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
   }
 }
 
-// ── Close Button ─────────────────────────────────────────────────────────────
-class _CloseFocusButton extends StatefulWidget {
-  const _CloseFocusButton({
-    required this.focusNode,
-    required this.onClose,
-    this.onDown,
-  });
-  final FocusNode focusNode;
-  final VoidCallback onClose;
-  final VoidCallback? onDown;
-
-  @override
-  State<_CloseFocusButton> createState() => _CloseFocusButtonState();
-}
-
-class _CloseFocusButtonState extends State<_CloseFocusButton> {
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Focus(
-      focusNode: widget.focusNode,
-      onFocusChange: (v) => setState(() => _focused = v),
-      onKeyEvent: (_, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
-        if (event.logicalKey == LogicalKeyboardKey.enter ||
-            event.logicalKey == LogicalKeyboardKey.select) {
-          widget.onClose();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          widget.onDown?.call();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.escape ||
-            event.logicalKey == LogicalKeyboardKey.goBack) {
-          widget.onClose();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: _focused ? AppTheme.primary : Colors.transparent,
-          ),
-        ),
-        child: IconButton(
-          icon: Icon(
-            Icons.close,
-            color: _focused ? AppTheme.primary : Colors.white38,
-            size: 18,
-          ),
-          onPressed: widget.onClose,
-        ),
-      ),
-    );
-  }
-}
-
 class _SettingsFocusButton extends StatefulWidget {
   const _SettingsFocusButton({
+    required this.focusNode,
     required this.onSettings,
+    this.onDown,
   });
 
+  final FocusNode focusNode;
   final VoidCallback onSettings;
+  final VoidCallback? onDown;
 
   @override
   State<_SettingsFocusButton> createState() => _SettingsFocusButtonState();
@@ -235,6 +165,7 @@ class _SettingsFocusButtonState extends State<_SettingsFocusButton> {
   @override
   Widget build(BuildContext context) {
     return Focus(
+      focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onKeyEvent: (_, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
@@ -243,9 +174,9 @@ class _SettingsFocusButtonState extends State<_SettingsFocusButton> {
           widget.onSettings();
           return KeyEventResult.handled;
         }
-        if (event.logicalKey == LogicalKeyboardKey.escape ||
-            event.logicalKey == LogicalKeyboardKey.goBack) {
-          return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+          widget.onDown?.call();
+          return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
       },
@@ -271,7 +202,6 @@ class _SettingsFocusButtonState extends State<_SettingsFocusButton> {
   }
 }
 
-// ── Individual Channel Item ───────────────────────────────────────────────────
 class _ChannelListItem extends StatefulWidget {
   const _ChannelListItem({
     required this.focusNode,
@@ -279,7 +209,7 @@ class _ChannelListItem extends StatefulWidget {
     required this.channelName,
     required this.isActive,
     required this.onSelect,
-    required this.onClose,
+    required this.onDismiss,
     this.onKeyEvent,
   });
 
@@ -288,7 +218,7 @@ class _ChannelListItem extends StatefulWidget {
   final String channelName;
   final bool isActive;
   final VoidCallback onSelect;
-  final VoidCallback onClose;
+  final VoidCallback onDismiss;
   final KeyEventResult Function(KeyEvent)? onKeyEvent;
 
   @override
@@ -307,7 +237,6 @@ class _ChannelListItemState extends State<_ChannelListItem> {
       onFocusChange: (v) {
         setState(() => _focused = v);
         if (v) {
-          // ফোকাস হলে স্ক্রিনে দৃশ্যমান করা
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && widget.focusNode.context != null) {
               Scrollable.ensureVisible(
@@ -322,34 +251,22 @@ class _ChannelListItemState extends State<_ChannelListItem> {
       onKeyEvent: (_, event) {
         if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
-        // OK → চ্যানেল সিলেক্ট
         if (event.logicalKey == LogicalKeyboardKey.enter ||
             event.logicalKey == LogicalKeyboardKey.select ||
             event.logicalKey == LogicalKeyboardKey.numpadEnter) {
           widget.onSelect();
-          // Auto-close on select
-          Future.delayed(const Duration(milliseconds: 100), () {
-            widget.onClose();
-          });
           return KeyEventResult.handled;
         }
-        // Back/Escape → প্যানেল বন্ধ
         if (event.logicalKey == LogicalKeyboardKey.escape ||
             event.logicalKey == LogicalKeyboardKey.goBack) {
-          widget.onClose();
+          widget.onDismiss();
           return KeyEventResult.handled;
         }
 
         return widget.onKeyEvent?.call(event) ?? KeyEventResult.ignored;
       },
       child: GestureDetector(
-        onTap: () {
-          widget.onSelect();
-          // Auto-close on tap
-          Future.delayed(const Duration(milliseconds: 100), () {
-            widget.onClose();
-          });
-        },
+        onTap: widget.onSelect,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

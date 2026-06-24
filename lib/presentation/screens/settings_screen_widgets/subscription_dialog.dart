@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import 'settings_shared_widgets.dart';
 
 class SubscriptionDialog extends StatelessWidget {
   const SubscriptionDialog({super.key, required this.plans});
@@ -80,12 +81,10 @@ class SubscriptionDialog extends StatelessWidget {
               ),
       ),
       actions: [
-        TextButton(
-              autofocus: true,
+        TvDialogAction(
+          label: 'Close',
+          autofocus: true,
           onPressed: () => Navigator.pop(context),
-          child: const Text('Close',
-              style: TextStyle(
-                  color: AppTheme.primary, fontWeight: FontWeight.bold)),
         ),
       ],
     );

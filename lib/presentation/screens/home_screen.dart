@@ -30,9 +30,23 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final List<FocusNode> _catNodes = [];
   final List<FocusNode> _chNodes = [];
 
+  /// Settings/Player থেকে ফিরে আসার পর একই Back press Home exit ধরবে না।
+  DateTime? _suppressExitUntil;
+
+  bool get _canShowExitPopup {
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) return false;
+    if (_suppressExitUntil != null &&
+        DateTime.now().isBefore(_suppressExitUntil!)) {
+      return false;
+    }
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
+    _suppressExitUntil = DateTime.now().add(const Duration(milliseconds: 400));
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -62,13 +76,15 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     super.dispose();
   }
 
-  /// Player বা Settings থেকে ফিরে এলে settings বাটনে ফোকাস রিস্টোর
+  /// Settings/Player থেকে ফিরে এলে focus restore + exit suppress
   @override
   void didPopNext() {
+    _suppressExitUntil = DateTime.now().add(const Duration(milliseconds: 600));
     restoreFocusAfterFrame(_settingsFocusNode, ifMounted: () => mounted);
   }
 
   Future<void> _handleHomeBack() async {
+    if (!_canShowExitPopup) return;
     await AppExitHandler.handleHomeExit(context);
   }
 
@@ -164,6 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        if (!_canShowExitPopup) return;
         await _handleHomeBack();
       },
       child: Scaffold(

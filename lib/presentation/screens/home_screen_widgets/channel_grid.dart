@@ -122,7 +122,11 @@ class _ChannelGridState extends State<ChannelGrid> {
                       },
                       onTap: () {
                         widget.appState.selectChannelByIndex(origIdx);
-                        Navigator.pushNamed(context, '/player');
+                        Navigator.pushNamed(
+                          context,
+                          '/player',
+                          arguments: 'fromHome',
+                        );
                       },
                       child: ChannelCard(
                         channel: ch,

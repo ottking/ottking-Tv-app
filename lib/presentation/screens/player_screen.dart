@@ -53,24 +53,20 @@ class _PlayerScreenState extends State<PlayerScreen>
   AppState? _appState;
 
   Timer? _controlsTimer;
+  Timer? _channelListTimer;
   Timer? _numberTimer;
-  Timer? _retryTimer;
 
   String _typed = '';
-  int _retryCount = 0;
-  static const int _maxRetry = 3;
 
   int _currentInitTimestamp = 0;
+  late DateTime _ignoreSelectUntil;
+  bool _handlingBack = false;
+  bool _routeArgsChecked = false;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _wakelock();
-      if (_nativeCtrl?.value.hasError == true) {
-        _retryCount = 0;
-        _initController();
-      }
-      // App resume হলে player focus রিস্টোর
       _requestFocus();
     } else if (state == AppLifecycleState.paused) {
       _nativeCtrl?.pause();
@@ -80,6 +76,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   @override
   void initState() {
     super.initState();
+    _ignoreSelectUntil = DateTime.now().add(const Duration(milliseconds: 800));
     HttpOverrides.global = _SecurePlayerHttpOverrides();
     WidgetsBinding.instance.addObserver(this);
     _forceFullLandscape();
@@ -98,8 +95,16 @@ class _PlayerScreenState extends State<PlayerScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // RouteAware সাবস্ক্রাইব
     PlayerScreen.routeObserver.subscribe(this, ModalRoute.of(context)!);
+
+    if (!_routeArgsChecked) {
+      _routeArgsChecked = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args == 'fromHome') {
+        _ignoreSelectUntil = DateTime.now().add(const Duration(seconds: 2));
+        _showChannelList = false;
+      }
+    }
 
     final nextState = context.watch<AppState>();
     if (_appState != null && _activeChannelId != null) {
@@ -117,6 +122,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   /// Settings dialog বা অন্য screen থেকে ফিরে এলে player focus রিস্টোর
   @override
   void didPopNext() {
+    _ignoreSelectUntil = DateTime.now().add(const Duration(milliseconds: 400));
     restoreFocusAfterFrame(_focus, ifMounted: () => mounted);
     _startControlsTimer();
   }
@@ -125,28 +131,33 @@ class _PlayerScreenState extends State<PlayerScreen>
     restoreFocusAfterFrame(_focus, ifMounted: () => mounted && !_showChannelList);
   }
 
-  /// Back press priority: close channel list → show exit (controls visible) → show controls.
+  /// Back: close list → exit dialog (controls visible) → show controls.
   Future<void> _handleBackPress() async {
-    if (_showChannelList) {
-      setState(() => _showChannelList = false);
-      _restorePlayerFocus();
-      return;
-    }
+    if (_handlingBack) return;
+    _handlingBack = true;
+    try {
+      if (_showChannelList) {
+        _hideChannelList();
+        return;
+      }
 
-    if (!_showControls) {
-      setState(() => _showControls = true);
-      _startControlsTimer();
-      _restorePlayerFocus();
-      return;
-    }
+      if (!_showControls) {
+        setState(() => _showControls = true);
+        _startControlsTimer();
+        _restorePlayerFocus();
+        return;
+      }
 
-    if (_appState == null) return;
-    await AppExitHandler.handleExit(
-      context: context,
-      appState: _appState!,
-      onBeforeDispose: _prepareForExitRelease,
-      onCancelled: _restorePlayerFocus,
-    );
+      if (_appState == null || !mounted) return;
+      await AppExitHandler.handleExit(
+        context: context,
+        appState: _appState!,
+        onBeforeDispose: _prepareForExitRelease,
+        onCancelled: _restorePlayerFocus,
+      );
+    } finally {
+      _handlingBack = false;
+    }
   }
 
   void _forceFullLandscape() {
@@ -163,9 +174,43 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   void _prepareForExitRelease() {
     _controlsTimer?.cancel();
+    _channelListTimer?.cancel();
     _numberTimer?.cancel();
-    _retryTimer?.cancel();
     _disposeControllers();
+  }
+
+  void _hideChannelList() {
+    _channelListTimer?.cancel();
+    if (!_showChannelList) return;
+    setState(() => _showChannelList = false);
+    _restorePlayerFocus();
+    _startControlsTimer();
+  }
+
+  void _showChannelListPanel() {
+    setState(() {
+      _showChannelList = true;
+      _showControls = true;
+    });
+    _controlsTimer?.cancel();
+    _startChannelListTimer();
+  }
+
+  void _startChannelListTimer() {
+    _channelListTimer?.cancel();
+    _channelListTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && _showChannelList) {
+        _hideChannelList();
+      }
+    });
+  }
+
+  void _toggleChannelList() {
+    if (_showChannelList) {
+      _hideChannelList();
+    } else {
+      _showChannelListPanel();
+    }
   }
 
   void _startControlsTimer() {
@@ -259,20 +304,18 @@ class _PlayerScreenState extends State<PlayerScreen>
       _nativeCtrlListener = _onNativeCtrlUpdate;
       _nativeCtrl = newCtrl;
       newCtrl.addListener(_nativeCtrlListener!);
-      _retryCount = 0;
 
       if (mounted) {
         setState(() {
           _isLoading = false;
           _hasStreamError = false;
         });
-        // Controller init হওয়ার পর player focus নিশ্চিত করা
         _requestFocus();
       }
     } catch (e) {
       if (_currentInitTimestamp == thisInitTimestamp && mounted) {
         newCtrl.dispose();
-        _handleLoadError();
+        _enterStreamErrorState();
       } else {
         newCtrl.dispose();
       }
@@ -282,48 +325,37 @@ class _PlayerScreenState extends State<PlayerScreen>
   void _onNativeCtrlUpdate() {
     if (!mounted) return;
     if (_nativeCtrl?.value.hasError == true) {
-      _scheduleRetry();
+      _enterStreamErrorState();
       return;
     }
     if (_nativeCtrl != null && _nativeCtrl!.value.isInitialized) {
-      if (!_nativeCtrl!.value.isBuffering && !_nativeCtrl!.value.isPlaying && !_hasStreamError && !_isLoading) {
+      if (!_nativeCtrl!.value.isBuffering &&
+          !_nativeCtrl!.value.isPlaying &&
+          !_hasStreamError &&
+          !_isLoading) {
         _nativeCtrl!.play();
       }
     }
     setState(() {});
   }
 
-  void _scheduleRetry() {
-    _retryTimer?.cancel();
-    if (_retryCount >= _maxRetry) {
-      if (mounted) setState(() { _isLoading = false; _hasStreamError = true; });
-      return;
-    }
-    _retryCount++;
-    if (mounted) setState(() => _isLoading = true);
-    _retryTimer = Timer(Duration(seconds: _retryCount * 2), () {
-      if (mounted) {
-        setState(() => _activeChannelId = null);
-        _initController();
-      }
-    });
-  }
-
-  void _handleLoadError() {
+  /// Stream failed — no auto-retry; remote channel change stays active.
+  void _enterStreamErrorState() {
+    _disposeControllers();
     if (!mounted) return;
-    if (_retryCount < _maxRetry) {
-      _scheduleRetry();
-    } else {
-      setState(() { _isLoading = false; _hasStreamError = true; });
-    }
+    setState(() {
+      _isLoading = false;
+      _hasStreamError = true;
+      _showControls = true;
+    });
+    _startControlsTimer();
+    _restorePlayerFocus();
   }
 
   void _requestFocus() => _restorePlayerFocus();
 
   void _switchChannel(int direction) {
     if (_appState == null) return;
-    _retryTimer?.cancel();
-    _retryCount = 0;
     _currentInitTimestamp = DateTime.now().millisecondsSinceEpoch;
     _disposeControllers();
 
@@ -358,8 +390,6 @@ class _PlayerScreenState extends State<PlayerScreen>
       _showSnack('$index No channel is available on this number.');
       return;
     }
-    _retryTimer?.cancel();
-    _retryCount = 0;
     _currentInitTimestamp = DateTime.now().millisecondsSinceEpoch;
     _disposeControllers();
 
@@ -419,58 +449,53 @@ class _PlayerScreenState extends State<PlayerScreen>
   }
 
   KeyEventResult _handlePlayerKey(FocusNode node, KeyEvent event) {
-    // Channel list has its own focus nodes — let them handle keys first.
     if (_showChannelList) {
       return KeyEventResult.ignored;
     }
 
-    if (event is KeyDownEvent) {
-      if (isTvBackKey(event)) {
-        unawaited(_handleBackPress());
-        return KeyEventResult.handled;
-      }
-
-      final label = event.logicalKey.keyLabel;
-      if (RegExp(r'^[0-9]$').hasMatch(label)) {
-        _handleNumberInput(label);
-        return KeyEventResult.handled;
-      }
-
-      if (event.logicalKey == LogicalKeyboardKey.channelUp ||
-          event.logicalKey == LogicalKeyboardKey.pageUp ||
-          event.logicalKey == LogicalKeyboardKey.arrowUp) {
-        _switchChannel(-1);
-        return KeyEventResult.handled;
-      }
-      if (event.logicalKey == LogicalKeyboardKey.channelDown ||
-          event.logicalKey == LogicalKeyboardKey.pageDown ||
-          event.logicalKey == LogicalKeyboardKey.arrowDown) {
-        _switchChannel(1);
-        return KeyEventResult.handled;
-      }
-
-      if (!_showControls) {
-        setState(() => _showControls = true);
-        _startControlsTimer();
-        _restorePlayerFocus();
-        return KeyEventResult.handled;
-      }
-
-      _startControlsTimer();
-    }
-
-    if (event is KeyUpEvent &&
-        (event.logicalKey == LogicalKeyboardKey.enter ||
-            event.logicalKey == LogicalKeyboardKey.select ||
-            event.logicalKey == LogicalKeyboardKey.space)) {
-      setState(() {
-        _showChannelList = true;
-        _showControls = true;
-      });
-      _controlsTimer?.cancel();
+    if (isTvBackKey(event)) {
+      unawaited(_handleBackPress());
       return KeyEventResult.handled;
     }
 
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final label = event.logicalKey.keyLabel;
+    if (RegExp(r'^[0-9]$').hasMatch(label)) {
+      _handleNumberInput(label);
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.channelUp ||
+        event.logicalKey == LogicalKeyboardKey.pageUp ||
+        event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      _switchChannel(-1);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.channelDown ||
+        event.logicalKey == LogicalKeyboardKey.pageDown ||
+        event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      _switchChannel(1);
+      return KeyEventResult.handled;
+    }
+
+    if (isTvActivateKey(event) &&
+        DateTime.now().isAfter(_ignoreSelectUntil) &&
+        !_isLoading) {
+      _toggleChannelList();
+      return KeyEventResult.handled;
+    }
+
+    if (!_showControls) {
+      setState(() => _showControls = true);
+      _startControlsTimer();
+      _restorePlayerFocus();
+      return KeyEventResult.handled;
+    }
+
+    _startControlsTimer();
     return KeyEventResult.ignored;
   }
 
@@ -530,15 +555,8 @@ class _PlayerScreenState extends State<PlayerScreen>
                 else
                   LoadingOverlay(
                     hasError: _hasStreamError,
-                    retryCount: _retryCount,
-                    maxRetry: _maxRetry,
+                    isLoading: _isLoading,
                     channelName: ch.name,
-                    onRetry: () {
-                      _retryCount = 0;
-                      setState(() { _hasStreamError = false; _activeChannelId = null; });
-                      _initController();
-                    },
-                    onNext: () => _switchChannel(1),
                   ),
 
                 if (_showControls)
@@ -555,14 +573,15 @@ class _PlayerScreenState extends State<PlayerScreen>
                     currentIndex: _appState!.currentChannelIndex,
                     onSettings: _openSettings,
                     onSelect: (i) {
-                      setState(() => _showChannelList = false);
-                      _switchToIndex(i);
-                      _restorePlayerFocus();
+                      final currentIdx = _appState!.currentChannelIndex;
+                      if (i == currentIdx) {
+                        _hideChannelList();
+                      } else {
+                        _hideChannelList();
+                        _switchToIndex(i);
+                      }
                     },
-                    onClose: () {
-                      setState(() => _showChannelList = false);
-                      _restorePlayerFocus();
-                    },
+                    onDismiss: _hideChannelList,
                   ),
               ],
             ),

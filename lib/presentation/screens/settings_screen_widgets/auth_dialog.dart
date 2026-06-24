@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../providers/app_state.dart';
+import 'settings_shared_widgets.dart';
 
 class AuthDialog extends StatefulWidget {
   const AuthDialog({super.key});
@@ -63,15 +64,12 @@ class _AuthDialogState extends State<AuthDialog> {
               obscure: true,
             ),
             const SizedBox(height: 12),
-            TextButton(
+            TvDialogAction(
+              label: _isRegister
+                  ? 'Already have an account? Sign in'
+                  : 'Create a new account',
               autofocus: true,
-              onPressed: () =>
-                  setState(() => _isRegister = !_isRegister),
-              child: Text(
-                _isRegister
-                    ? 'Already have an account? Sign in': 'Create a new account',
-                style: const TextStyle(color: AppTheme.primary),
-              ),
+              onPressed: () => setState(() => _isRegister = !_isRegister),
             ),
             if (appState.errorMessage.isNotEmpty)
               Text(appState.errorMessage,
@@ -82,41 +80,21 @@ class _AuthDialogState extends State<AuthDialog> {
       ),
       actions: [
         if (appState.isAuthenticated)
-          TextButton(
+          TvDialogAction(
+            label: 'Logout',
+            color: Colors.redAccent,
             onPressed: () {
               appState.logout();
               Navigator.pop(context);
             },
-            child: const Text('Logout',
-                style: TextStyle(
-                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
-        TextButton(
+        TvDialogAction(
+          label: 'Cancel',
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel',
-              style: TextStyle(color: Colors.white38)),
         ),
-        FilledButton(
-          onPressed: _loading ? null : () => _submit(appState),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
-          ),
-          child: _loading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
-                  ))
-              : Text(
-                  _isRegister ? 'Register' : 'Sign In',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black),
-                ),
+        TvDialogAction(
+          label: _isRegister ? 'Register' : 'Sign In',
+          onPressed: _loading ? () {} : () => _submit(appState),
         ),
       ],
     );

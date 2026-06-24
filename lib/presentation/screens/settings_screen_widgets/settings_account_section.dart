@@ -11,8 +11,17 @@ import 'auth_dialog.dart';
 import 'subscription_dialog.dart';
 
 class SettingsAccountSection extends StatelessWidget {
-  const SettingsAccountSection({super.key, required this.appState});
+  const SettingsAccountSection({
+    super.key,
+    required this.appState,
+    required this.cardFocusNodes,
+    required this.onReturnToSidebar,
+    required this.onScreenBack,
+  });
   final AppState appState;
+  final List<FocusNode> cardFocusNodes;
+  final VoidCallback onReturnToSidebar;
+  final VoidCallback onScreenBack;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +41,7 @@ class SettingsAccountSection extends StatelessWidget {
         SettingsTwoColRow(
           children: [
             SettingCard(
+              focusNode: cardFocusNodes.isNotEmpty ? cardFocusNodes[0] : null,
               icon: appState.isAuthenticated
                   ? Icons.manage_accounts_rounded
                   : Icons.login_rounded,
@@ -40,6 +50,8 @@ class SettingsAccountSection extends StatelessWidget {
                   ? appState.userProfile?.email ?? ''
                   : 'Sign in to access premium channels',
               highlight: appState.isAuthenticated,
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               onTap: () {
                 if (appState.isAuthenticated && appState.userProfile != null) {
                   showDialog(
@@ -62,11 +74,14 @@ class SettingsAccountSection extends StatelessWidget {
               },
             ),
             SettingCard(
+              focusNode: cardFocusNodes.length > 1 ? cardFocusNodes[1] : null,
               icon: Icons.card_membership_rounded,
               title: 'SUBSCRIPTION',
               subtitle: appState.isAuthenticated
                   ? 'Plan: ${appState.userProfile?.plan ?? "–"}'
                   : 'View packages and prices',
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               onTap: () => showDialog(
                 context: context,
                 builder: (_) => SubscriptionDialog(plans: appState.plans),
@@ -264,19 +279,15 @@ class AccountInfoDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
+        TvDialogAction(
+          label: 'Cancel',
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white38)),
         ),
-        TvFocus(
-          onActivate: onLogout,
-          builder: (context, focused) => FilledButton(
-            onPressed: onLogout,
-            style: FilledButton.styleFrom(
-              backgroundColor: focused ? Colors.redAccent : AppTheme.primary,
-            ),
-            child: const Text('Logout', style: TextStyle(color: Colors.white)),
-          ),
+        TvDialogAction(
+          label: 'Logout',
+          autofocus: true,
+          color: Colors.redAccent,
+          onPressed: onLogout,
         ),
       ],
     );

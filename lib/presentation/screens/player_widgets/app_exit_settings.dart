@@ -241,19 +241,22 @@ class PlayerSettingsDialog extends StatefulWidget {
 class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
   final List<FocusNode> _focusNodes = [];
   int _focusedIndex = 0;
-  int _totalItems = 0;
+
+  int get _itemCount {
+    var count = 1; // boot player
+    if (widget.state.isAuthenticated) count++;
+    count += 1; // app info
+    count += 1; // open full settings
+    count += 1; // close
+    return count;
+  }
 
   @override
   void initState() {
     super.initState();
-    
-    _totalItems = widget.state.isAuthenticated ? 4 : 3; 
-    _totalItems += 1; // সেটিংস অ্যাকশন বাটনের জন্য
-
-    for (int i = 0; i < _totalItems; i++) {
-      _focusNodes.add(FocusNode(debugLabel: 'settings-item-$i'));
+    for (int i = 0; i < _itemCount; i++) {
+      _focusNodes.add(FocusNode(debugLabel: 'player-settings-$i'));
     }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _focusNodes.isNotEmpty) {
         _focusNodes[0].requestFocus();
@@ -278,11 +281,13 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
 
   KeyEventResult _onKey(KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+        event.logicalKey == LogicalKeyboardKey.arrowRight) {
       _moveFocus(1);
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp ||
+        event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _moveFocus(-1);
       return KeyEventResult.handled;
     }
@@ -410,14 +415,30 @@ class _PlayerSettingsDialogState extends State<PlayerSettingsDialog> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Text(
-              'Settings', 
-              style: TextStyle(color: _focusedIndex == (currentVisualIndex - 1) ? Colors.white : Colors.white54),
+              'Settings',
+              style: TextStyle(
+                color: _focusedIndex == (currentVisualIndex - 1)
+                    ? Colors.white
+                    : Colors.white54,
+              ),
             ),
           ),
         ),
-        TextButton(
-          onPressed: widget.onClose,
-          child: Text('Close', style: TextStyle(color: AppTheme.primary)),
+        _focusableItem(
+          listIndex: currentVisualIndex++,
+          onActivate: widget.onClose,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Text(
+              'Close',
+              style: TextStyle(
+                color: _focusedIndex == (currentVisualIndex - 1)
+                    ? AppTheme.primary
+                    : Colors.white54,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ),
       ],
     );

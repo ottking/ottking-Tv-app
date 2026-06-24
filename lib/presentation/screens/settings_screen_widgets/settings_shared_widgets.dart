@@ -53,7 +53,7 @@ class SettingsTwoColRow extends StatelessWidget {
   }
 }
 
-/// Focusable setting card
+/// Focusable setting card — TV remote: OK activates, ← sidebar, Back pops screen.
 class SettingCard extends StatefulWidget {
   const SettingCard({
     super.key,
@@ -61,15 +61,21 @@ class SettingCard extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.focusNode,
     this.trailing,
     this.highlight = false,
+    this.onReturnToSidebar,
+    this.onScreenBack,
   });
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final FocusNode? focusNode;
   final Widget? trailing;
   final bool highlight;
+  final VoidCallback? onReturnToSidebar;
+  final VoidCallback? onScreenBack;
 
   @override
   State<SettingCard> createState() => _SettingCardState();
@@ -82,8 +88,18 @@ class _SettingCardState extends State<SettingCard> {
   Widget build(BuildContext context) {
     final active = _focused || widget.highlight;
     return TvFocus(
+      focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onActivate: widget.onTap,
+      onBack: widget.onScreenBack,
+      onKeyEvent: (event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          widget.onReturnToSidebar?.call();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
       builder: (context, focused) => GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
@@ -152,6 +168,83 @@ class _SettingCardState extends State<SettingCard> {
                   Icon(Icons.arrow_forward_ios_rounded,
                       color: Colors.white24, size: 14),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// TV-remote friendly dialog action button.
+class TvDialogAction extends StatefulWidget {
+  const TvDialogAction({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.focusNode,
+    this.autofocus = false,
+    this.color,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final FocusNode? focusNode;
+  final bool autofocus;
+  final Color? color;
+
+  @override
+  State<TvDialogAction> createState() => _TvDialogActionState();
+}
+
+class _TvDialogActionState extends State<TvDialogAction> {
+  bool _focused = false;
+  late final FocusNode _node =
+      widget.focusNode ?? FocusNode(debugLabel: 'dialog-action');
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _node.requestFocus();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.focusNode == null) _node.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color ?? AppTheme.primary;
+    return Focus(
+      focusNode: _node,
+      autofocus: widget.autofocus,
+      onFocusChange: (v) => setState(() => _focused = v),
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.select)) {
+          widget.onPressed();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: TextButton(
+        onPressed: widget.onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: color,
+          backgroundColor:
+              _focused ? color.withOpacity(0.15) : Colors.transparent,
+        ),
+        child: Text(
+          widget.label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: _focused ? color : color.withOpacity(0.8),
           ),
         ),
       ),

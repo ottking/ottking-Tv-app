@@ -7,8 +7,17 @@ import '../../providers/app_state.dart';
 import 'settings_shared_widgets.dart';
 
 class SettingsTvSection extends StatelessWidget {
-  const SettingsTvSection({super.key, required this.appState});
+  const SettingsTvSection({
+    super.key,
+    required this.appState,
+    required this.cardFocusNodes,
+    required this.onReturnToSidebar,
+    required this.onScreenBack,
+  });
   final AppState appState;
+  final List<FocusNode> cardFocusNodes;
+  final VoidCallback onReturnToSidebar;
+  final VoidCallback onScreenBack;
 
   @override
   Widget build(BuildContext context) {
@@ -25,13 +34,15 @@ class SettingsTvSection extends StatelessWidget {
           children: [
             // ── Boot Player toggle ─────────────────────────────────────────
             SettingCard(
+              focusNode: cardFocusNodes.isNotEmpty ? cardFocusNodes[0] : null,
               icon: Icons.rocket_launch_rounded,
               title: 'Boot Player (Auto Player)',
               subtitle: isBootEnabled
                   ? 'On — App will start live TV automatically'
                   : 'Off — Will go to home page',
               highlight: isBootEnabled,
-              // টিভি রিমোটের ফোকাস যেন কনফ্লিক্ট না করে, তাই সুইচের onChanged ডিরেক্ট কার্ডের টগলে পাস করা হলো
+              onReturnToSidebar: onReturnToSidebar,
+              onScreenBack: onScreenBack,
               trailing: Switch(
                 value: isBootEnabled,
                 activeColor: AppTheme.primary,
