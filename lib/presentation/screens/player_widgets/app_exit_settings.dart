@@ -93,11 +93,13 @@ class _ExitConfirmDialog extends StatefulWidget {
 class _ExitConfirmDialogState extends State<_ExitConfirmDialog> {
   final FocusNode _noNode = FocusNode(debugLabel: 'exit-no');
   final FocusNode _yesNode = FocusNode(debugLabel: 'exit-yes');
+  late DateTime _ignoreBackUntil;
 
   @override
   void initState() {
     super.initState();
-    // Dialog খুললে "No" বাটনে ফোকাস (safe default)
+    // Same back press that opened the dialog must not instantly close it.
+    _ignoreBackUntil = DateTime.now().add(const Duration(milliseconds: 350));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _noNode.requestFocus();
     });
@@ -131,16 +133,16 @@ class _ExitConfirmDialogState extends State<_ExitConfirmDialog> {
           focusNode: _noNode,
           label: 'No',
           color: Colors.white54,
+          ignoreBackUntil: _ignoreBackUntil,
           onPressed: () => Navigator.pop(context, false),
-          // No থেকে → Yes তে যাওয়ার জন্য
           onRight: () => _yesNode.requestFocus(),
         ),
         _DialogButton(
           focusNode: _yesNode,
           label: 'Yes',
           color: AppTheme.primary,
+          ignoreBackUntil: _ignoreBackUntil,
           onPressed: () => Navigator.pop(context, true),
-          // Yes থেকে ← No তে যাওয়ার জন্য
           onLeft: () => _noNode.requestFocus(),
         ),
       ],
@@ -154,6 +156,7 @@ class _DialogButton extends StatefulWidget {
     required this.label,
     required this.color,
     required this.onPressed,
+    this.ignoreBackUntil,
     this.onLeft,
     this.onRight,
   });
@@ -161,6 +164,7 @@ class _DialogButton extends StatefulWidget {
   final String label;
   final Color color;
   final VoidCallback onPressed;
+  final DateTime? ignoreBackUntil;
   final VoidCallback? onLeft;
   final VoidCallback? onRight;
 
@@ -193,6 +197,10 @@ class _DialogButtonState extends State<_DialogButton> {
         }
         if (event.logicalKey == LogicalKeyboardKey.escape ||
             event.logicalKey == LogicalKeyboardKey.goBack) {
+          final ignoreUntil = widget.ignoreBackUntil;
+          if (ignoreUntil != null && DateTime.now().isBefore(ignoreUntil)) {
+            return KeyEventResult.handled;
+          }
           Navigator.pop(context, false);
           return KeyEventResult.handled;
         }

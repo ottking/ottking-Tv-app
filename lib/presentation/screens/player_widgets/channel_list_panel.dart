@@ -10,14 +10,12 @@ class ChannelListPanel extends StatefulWidget {
     required this.currentIndex,
     required this.onSettings,
     required this.onSelect,
-    required this.onDismiss,
   });
 
   final List channels;
   final int currentIndex;
   final VoidCallback onSettings;
   final ValueChanged<int> onSelect;
-  final VoidCallback onDismiss;
 
   @override
   State<ChannelListPanel> createState() => _ChannelListPanelState();
@@ -38,22 +36,36 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _itemNodes.isEmpty) return;
-
-      final idx = widget.currentIndex.clamp(0, _itemNodes.length - 1);
-      _itemNodes[idx].requestFocus();
-
-      if (_scrollController.hasClients) {
-        const itemHeight = 50.0;
-        final targetOffset = (idx * itemHeight) - 150;
-        final maxOffset = _scrollController.position.maxScrollExtent;
-        _scrollController.animateTo(
-          targetOffset.clamp(0.0, maxOffset),
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      _focusCurrentChannel();
     });
+  }
+
+  void _focusCurrentChannel() {
+    if (!mounted || _itemNodes.isEmpty) return;
+
+    final idx = widget.currentIndex.clamp(0, _itemNodes.length - 1);
+    _itemNodes[idx].requestFocus();
+
+    if (_scrollController.hasClients) {
+      const itemHeight = 50.0;
+      final targetOffset = (idx * itemHeight) - 150;
+      final maxOffset = _scrollController.position.maxScrollExtent;
+      _scrollController.animateTo(
+        targetOffset.clamp(0.0, maxOffset),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(ChannelListPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusCurrentChannel();
+      });
+    }
   }
 
   @override
@@ -72,72 +84,87 @@ class _ChannelListPanelState extends State<ChannelListPanel> {
       right: 0,
       top: 0,
       bottom: 0,
-      child: Container(
-        width: 300,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.92),
-          border: Border(
-            left: BorderSide(color: AppTheme.primary.withOpacity(0.3), width: 1),
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  const Icon(Icons.list_rounded, color: AppTheme.primary, size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Channel List',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+      child: FocusScope(
+        node: FocusScopeNode(debugLabel: 'ch-list-panel-scope'),
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Container(
+            width: 300,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.92),
+              border: Border(
+                left: BorderSide(
+                  color: AppTheme.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.list_rounded,
+                          color: AppTheme.primary, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Channel List',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const Spacer(),
+                      _SettingsFocusButton(
+                        focusNode: _settingsBtnNode,
+                        onSettings: widget.onSettings,
+                        onDown: () {
+                          if (_itemNodes.isNotEmpty) {
+                            _itemNodes[0].requestFocus();
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  _SettingsFocusButton(
-                    focusNode: _settingsBtnNode,
-                    onSettings: widget.onSettings,
-                    onDown: () {
-                      if (_itemNodes.isNotEmpty) _itemNodes[0].requestFocus();
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    itemCount: widget.channels.length,
+                    itemBuilder: (ctx, i) {
+                      final ch = widget.channels[i];
+                      final isActive = i == widget.currentIndex;
+                      if (i >= _itemNodes.length) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return _ChannelListItem(
+                        focusNode: _itemNodes[i],
+                        index: i,
+                        channelName: ch.name,
+                        isActive: isActive,
+                        onSelect: () => widget.onSelect(i),
+                        onKeyEvent: i == 0
+                            ? (event) {
+                                if (event is KeyDownEvent &&
+                                    event.logicalKey ==
+                                        LogicalKeyboardKey.arrowUp) {
+                                  _settingsBtnNode.requestFocus();
+                                  return KeyEventResult.handled;
+                                }
+                                return KeyEventResult.ignored;
+                              }
+                            : null,
+                      );
                     },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                itemCount: widget.channels.length,
-                itemBuilder: (ctx, i) {
-                  final ch = widget.channels[i];
-                  final isActive = i == widget.currentIndex;
-                  if (i >= _itemNodes.length) return const SizedBox.shrink();
-
-                  return _ChannelListItem(
-                    focusNode: _itemNodes[i],
-                    index: i,
-                    channelName: ch.name,
-                    isActive: isActive,
-                    onSelect: () => widget.onSelect(i),
-                    onDismiss: widget.onDismiss,
-                    onKeyEvent: i == 0
-                        ? (event) {
-                            if (event is KeyDownEvent &&
-                                event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                              _settingsBtnNode.requestFocus();
-                              return KeyEventResult.handled;
-                            }
-                            return KeyEventResult.ignored;
-                          }
-                        : null,
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -183,7 +210,8 @@ class _SettingsFocusButtonState extends State<_SettingsFocusButton> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
+          color:
+              _focused ? AppTheme.primary.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: _focused ? AppTheme.primary : Colors.transparent,
@@ -209,7 +237,6 @@ class _ChannelListItem extends StatefulWidget {
     required this.channelName,
     required this.isActive,
     required this.onSelect,
-    required this.onDismiss,
     this.onKeyEvent,
   });
 
@@ -218,7 +245,6 @@ class _ChannelListItem extends StatefulWidget {
   final String channelName;
   final bool isActive;
   final VoidCallback onSelect;
-  final VoidCallback onDismiss;
   final KeyEventResult Function(KeyEvent)? onKeyEvent;
 
   @override
@@ -255,11 +281,6 @@ class _ChannelListItemState extends State<_ChannelListItem> {
             event.logicalKey == LogicalKeyboardKey.select ||
             event.logicalKey == LogicalKeyboardKey.numpadEnter) {
           widget.onSelect();
-          return KeyEventResult.handled;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.escape ||
-            event.logicalKey == LogicalKeyboardKey.goBack) {
-          widget.onDismiss();
           return KeyEventResult.handled;
         }
 

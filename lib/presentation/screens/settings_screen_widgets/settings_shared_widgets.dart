@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../widgets/tv_focus.dart';
+import '../../widgets/tv_focus_utils.dart';
 
 /// Section শিরোনাম
 class SectionHeader extends StatelessWidget {
@@ -91,11 +92,24 @@ class _SettingCardState extends State<SettingCard> {
       focusNode: widget.focusNode,
       onFocusChange: (v) => setState(() => _focused = v),
       onActivate: widget.onTap,
-      onBack: widget.onScreenBack,
       onKeyEvent: (event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.arrowLeft) {
           widget.onReturnToSidebar?.call();
+          return KeyEventResult.handled;
+        }
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.arrowDown &&
+            widget.focusNode != null) {
+          final scope = FocusScope.of(context);
+          scope.nextFocus();
+          return KeyEventResult.handled;
+        }
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.arrowUp &&
+            widget.focusNode != null) {
+          final scope = FocusScope.of(context);
+          scope.previousFocus();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -184,6 +198,8 @@ class TvDialogAction extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.color,
+    this.onLeft,
+    this.onRight,
   });
 
   final String label;
@@ -191,6 +207,8 @@ class TvDialogAction extends StatefulWidget {
   final FocusNode? focusNode;
   final bool autofocus;
   final Color? color;
+  final VoidCallback? onLeft;
+  final VoidCallback? onRight;
 
   @override
   State<TvDialogAction> createState() => _TvDialogActionState();
@@ -200,10 +218,12 @@ class _TvDialogActionState extends State<TvDialogAction> {
   bool _focused = false;
   late final FocusNode _node =
       widget.focusNode ?? FocusNode(debugLabel: 'dialog-action');
+  late DateTime _ignoreBackUntil;
 
   @override
   void initState() {
     super.initState();
+    _ignoreBackUntil = DateTime.now().add(const Duration(milliseconds: 300));
     if (widget.autofocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _node.requestFocus();
@@ -225,11 +245,32 @@ class _TvDialogActionState extends State<TvDialogAction> {
       autofocus: widget.autofocus,
       onFocusChange: (v) => setState(() => _focused = v),
       onKeyEvent: (_, event) {
+        if (isTvBackKey(event)) {
+          if (DateTime.now().isBefore(_ignoreBackUntil)) {
+            return KeyEventResult.handled;
+          }
+          Navigator.of(context).pop();
+          return KeyEventResult.handled;
+        }
         if (event is KeyDownEvent &&
             (event.logicalKey == LogicalKeyboardKey.enter ||
                 event.logicalKey == LogicalKeyboardKey.select)) {
           widget.onPressed();
           return KeyEventResult.handled;
+        }
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          widget.onLeft?.call();
+          return widget.onLeft != null
+              ? KeyEventResult.handled
+              : KeyEventResult.ignored;
+        }
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.arrowRight) {
+          widget.onRight?.call();
+          return widget.onRight != null
+              ? KeyEventResult.handled
+              : KeyEventResult.ignored;
         }
         return KeyEventResult.ignored;
       },

@@ -11,8 +11,7 @@ class ChannelGrid extends StatefulWidget {
     required this.channels,
     required this.chNodes,
     required this.appState,
-    required this.categoryName,
-    this.onBack,
+    required     this.categoryName,
     this.onFocusIndex,
   });
 
@@ -20,7 +19,6 @@ class ChannelGrid extends StatefulWidget {
   final List<FocusNode> chNodes;
   final AppState appState;
   final String categoryName;
-  final Future<void> Function()? onBack;
   final ValueChanged<int>? onFocusIndex;
 
   @override
@@ -105,7 +103,6 @@ class _ChannelGridState extends State<ChannelGrid> {
                       focusNode: widget.chNodes[i],
                       selected: playing,
                       padding: EdgeInsets.zero,
-                      onBack: widget.onBack == null ? null : () { widget.onBack!(); },
                       onFocusChange: (hasFocus) {
                         if (hasFocus) {
                           widget.onFocusIndex?.call(i);

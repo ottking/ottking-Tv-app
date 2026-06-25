@@ -245,7 +245,7 @@ class AccountCard extends StatelessWidget {
   }
 }
 
-class AccountInfoDialog extends StatelessWidget {
+class AccountInfoDialog extends StatefulWidget {
   const AccountInfoDialog({
     super.key,
     required this.profile,
@@ -254,6 +254,21 @@ class AccountInfoDialog extends StatelessWidget {
 
   final dynamic profile;
   final VoidCallback onLogout;
+
+  @override
+  State<AccountInfoDialog> createState() => _AccountInfoDialogState();
+}
+
+class _AccountInfoDialogState extends State<AccountInfoDialog> {
+  final FocusNode _cancelNode = FocusNode(debugLabel: 'account-cancel');
+  final FocusNode _logoutNode = FocusNode(debugLabel: 'account-logout');
+
+  @override
+  void dispose() {
+    _cancelNode.dispose();
+    _logoutNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -270,24 +285,36 @@ class AccountInfoDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _AccountInfoRow(label: 'Email', value: profile.email),
+            _AccountInfoRow(label: 'Email', value: widget.profile.email),
             const SizedBox(height: 12),
-            _AccountInfoRow(label: 'Plan', value: profile.plan),
+            _AccountInfoRow(label: 'Plan', value: widget.profile.plan),
             const SizedBox(height: 12),
-            _AccountInfoRow(label: 'Status', value: 'Logged in'),
+            const _AccountInfoRow(label: 'Status', value: 'Logged in'),
           ],
         ),
       ),
       actions: [
-        TvDialogAction(
-          label: 'Cancel',
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        TvDialogAction(
-          label: 'Logout',
-          autofocus: true,
-          color: Colors.redAccent,
-          onPressed: onLogout,
+        FocusTraversalGroup(
+          policy: WidgetOrderTraversalPolicy(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TvDialogAction(
+                focusNode: _cancelNode,
+                label: 'Cancel',
+                onPressed: () => Navigator.of(context).pop(),
+                onRight: () => _logoutNode.requestFocus(),
+              ),
+              TvDialogAction(
+                focusNode: _logoutNode,
+                label: 'Logout',
+                autofocus: true,
+                color: Colors.redAccent,
+                onPressed: widget.onLogout,
+                onLeft: () => _cancelNode.requestFocus(),
+              ),
+            ],
+          ),
         ),
       ],
     );

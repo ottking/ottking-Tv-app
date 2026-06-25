@@ -15,7 +15,6 @@ class CategorySidebar extends StatelessWidget {
     required this.onSelect,
     // ডানে গেলে চ্যানেল গ্রিডের প্রথম আইটেমে সরাসরি ফোকাস দেওয়ার callback
     this.onMoveRight,
-    this.onBack,
   });
 
   final List<Map<String, String>> cats;
@@ -23,7 +22,6 @@ class CategorySidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback? onMoveRight;
-  final Future<void> Function()? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +51,14 @@ class CategorySidebar extends StatelessWidget {
                 icon: cat['icon']!,
                 name: cat['name']!,
                 selected: selectedIndex == i,
-                onTap: () => onSelect(i),
-                onFocus: () => onSelect(i),
-                onMoveRight: onMoveRight,
-                onBack: onBack,
+                onActivate: () {
+                  onSelect(i);
+                  onMoveRight?.call();
+                },
+                onMoveRight: () {
+                  onSelect(i);
+                  onMoveRight?.call();
+                },
               );
             },
           ),
@@ -73,20 +75,16 @@ class CategoryItem extends StatefulWidget {
     required this.icon,
     required this.name,
     required this.selected,
-    required this.onTap,
-    required this.onFocus,
+    required this.onActivate,
     this.onMoveRight,
-    this.onBack,
   });
 
   final FocusNode focusNode;
   final String icon;
   final String name;
   final bool selected;
-  final VoidCallback onTap;
-  final VoidCallback onFocus;
+  final VoidCallback onActivate;
   final VoidCallback? onMoveRight;
-  final Future<void> Function()? onBack;
 
   @override
   State<CategoryItem> createState() => _CategoryItemState();
@@ -102,12 +100,8 @@ class _CategoryItemState extends State<CategoryItem> {
       padding: const EdgeInsets.only(bottom: 6),
       child: TvFocus(
         focusNode: widget.focusNode,
-        onFocusChange: (v) {
-          setState(() => _focused = v);
-          if (v) widget.onFocus();
-        },
-        onActivate: widget.onTap,
-        onBack: widget.onBack == null ? null : () { widget.onBack!(); },
+        onFocusChange: (v) => setState(() => _focused = v),
+        onActivate: widget.onActivate,
         onKeyEvent: (e) {
           if (e is KeyDownEvent &&
               e.logicalKey == LogicalKeyboardKey.arrowRight) {
@@ -117,7 +111,7 @@ class _CategoryItemState extends State<CategoryItem> {
           return KeyEventResult.ignored;
         },
         builder: (context, focused) => GestureDetector(
-          onTap: widget.onTap,
+          onTap: widget.onActivate,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

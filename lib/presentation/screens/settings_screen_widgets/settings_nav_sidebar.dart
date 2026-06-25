@@ -20,7 +20,7 @@ class SettingsNavSidebar extends StatefulWidget {
   final ValueChanged<int> onSelect;
   final VoidCallback onBack;
   final FocusNode? firstFocusNode;
-  final VoidCallback? onMoveToContent;
+  final ValueChanged<int>? onMoveToContent;
 
   @override
   State<SettingsNavSidebar> createState() => _SettingsNavSidebarState();
@@ -134,7 +134,7 @@ class _SettingsNavSidebarState extends State<SettingsNavSidebar> {
                 isActive: isActive,
                 onTap: () => widget.onSelect(i),
                 onBack: widget.onBack,
-                onMoveToContent: widget.onMoveToContent,
+                onMoveToContent: () => widget.onMoveToContent?.call(i),
                 // প্রথম আইটেম থেকে উপরে গেলে ব্যাক বাটনে ফোকাস
                 onKeyEvent: i == 0
                     ? (event) {
@@ -272,10 +272,7 @@ class _NavItemState extends State<_NavItem> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Focus(
         focusNode: widget.focusNode,
-        onFocusChange: (v) {
-          setState(() => _focused = v);
-          if (v) widget.onTap(); // ফোকাস হলেই সেকশন সুইচ
-        },
+        onFocusChange: (v) => setState(() => _focused = v),
         onKeyEvent: (_, event) {
           if (isTvBackKey(event)) {
             widget.onBack();

@@ -79,22 +79,31 @@ class _AuthDialogState extends State<AuthDialog> {
         ),
       ),
       actions: [
-        if (appState.isAuthenticated)
-          TvDialogAction(
-            label: 'Logout',
-            color: Colors.redAccent,
-            onPressed: () {
-              appState.logout();
-              Navigator.pop(context);
-            },
+        FocusTraversalGroup(
+          policy: WidgetOrderTraversalPolicy(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (appState.isAuthenticated)
+                TvDialogAction(
+                  label: 'Logout',
+                  color: Colors.redAccent,
+                  onPressed: () {
+                    appState.logout();
+                    Navigator.pop(context);
+                  },
+                ),
+              TvDialogAction(
+                label: 'Cancel',
+                onPressed: () => Navigator.pop(context),
+              ),
+              TvDialogAction(
+                label: _isRegister ? 'Register' : 'Sign In',
+                autofocus: !appState.isAuthenticated,
+                onPressed: _loading ? () {} : () => _submit(appState),
+              ),
+            ],
           ),
-        TvDialogAction(
-          label: 'Cancel',
-          onPressed: () => Navigator.pop(context),
-        ),
-        TvDialogAction(
-          label: _isRegister ? 'Register' : 'Sign In',
-          onPressed: _loading ? () {} : () => _submit(appState),
         ),
       ],
     );

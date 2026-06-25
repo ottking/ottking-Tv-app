@@ -101,7 +101,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       _routeArgsChecked = true;
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args == 'fromHome') {
-        _ignoreSelectUntil = DateTime.now().add(const Duration(seconds: 2));
+        _ignoreSelectUntil = DateTime.now().add(const Duration(milliseconds: 1500));
         _showChannelList = false;
       }
     }
@@ -131,7 +131,7 @@ class _PlayerScreenState extends State<PlayerScreen>
     restoreFocusAfterFrame(_focus, ifMounted: () => mounted && !_showChannelList);
   }
 
-  /// Back: close list → exit dialog (controls visible) → show controls.
+  /// Back: close list → exit dialog (controls visible or hidden).
   Future<void> _handleBackPress() async {
     if (_handlingBack) return;
     _handlingBack = true;
@@ -141,20 +141,20 @@ class _PlayerScreenState extends State<PlayerScreen>
         return;
       }
 
+      if (_appState == null || !mounted) return;
+
       if (!_showControls) {
         setState(() => _showControls = true);
-        _startControlsTimer();
-        _restorePlayerFocus();
-        return;
       }
+      _controlsTimer?.cancel();
 
-      if (_appState == null || !mounted) return;
       await AppExitHandler.handleExit(
         context: context,
         appState: _appState!,
         onBeforeDispose: _prepareForExitRelease,
         onCancelled: _restorePlayerFocus,
       );
+      if (mounted) _startControlsTimer();
     } finally {
       _handlingBack = false;
     }
@@ -525,7 +525,8 @@ class _PlayerScreenState extends State<PlayerScreen>
       },
       child: Focus(
         focusNode: _focus,
-        autofocus: true,
+        autofocus: !_showChannelList,
+        skipTraversal: _showChannelList,
         onKeyEvent: _handlePlayerKey,
         child: Scaffold(
           backgroundColor: Colors.black,
@@ -581,7 +582,6 @@ class _PlayerScreenState extends State<PlayerScreen>
                         _switchToIndex(i);
                       }
                     },
-                    onDismiss: _hideChannelList,
                   ),
               ],
             ),

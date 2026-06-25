@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../providers/app_state.dart';
-import '../widgets/tv_focus_utils.dart';
 import 'home_screen_widgets/home_top_bar.dart';
 import 'home_screen_widgets/category_sidebar.dart';
 import 'home_screen_widgets/channel_grid.dart';
@@ -32,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
   /// Settings/Player থেকে ফিরে আসার পর একই Back press Home exit ধরবে না।
   DateTime? _suppressExitUntil;
+  bool _handlingBack = false;
+  bool _initialGridFocusDone = false;
 
   bool get _canShowExitPopup {
     final route = ModalRoute.of(context);
@@ -54,10 +55,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_catNodes.isNotEmpty && mounted) {
-        _catNodes[0].requestFocus();
-      }
+      if (!mounted) return;
+      _tryInitialGridFocus();
     });
+  }
+
+  void _tryInitialGridFocus() {
+    if (_initialGridFocusDone || !mounted) return;
+    if (_chNodes.isEmpty) return;
+    _initialGridFocusDone = true;
+    _requestGridFocus(_lastFocusedGridIndex.clamp(0, _chNodes.length - 1));
   }
 
   @override
@@ -79,13 +86,21 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   /// Settings/Player থেকে ফিরে এলে focus restore + exit suppress
   @override
   void didPopNext() {
-    _suppressExitUntil = DateTime.now().add(const Duration(milliseconds: 600));
-    restoreFocusAfterFrame(_settingsFocusNode, ifMounted: () => mounted);
+    _suppressExitUntil = DateTime.now().add(const Duration(milliseconds: 900));
+    _initialGridFocusDone = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _tryInitialGridFocus();
+    });
   }
 
   Future<void> _handleHomeBack() async {
-    if (!_canShowExitPopup) return;
-    await AppExitHandler.handleHomeExit(context);
+    if (_handlingBack || !_canShowExitPopup) return;
+    _handlingBack = true;
+    try {
+      await AppExitHandler.handleHomeExit(context);
+    } finally {
+      _handlingBack = false;
+    }
   }
 
   void _clearCatNodes() {
@@ -131,13 +146,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   void _changeCategory(int index) {
-    if (_selectedCategoryIndex == index) return;
-    setState(() {
-      _selectedCategoryIndex = index;
-      _clearChNodes();
-    });
+    final changed = _selectedCategoryIndex != index;
+    if (changed) {
+      setState(() {
+        _selectedCategoryIndex = index;
+        _clearChNodes();
+        _lastFocusedGridIndex = 0;
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestCategoryFocus(index);
+      _requestGridFocus(_lastFocusedGridIndex.clamp(0, _chNodes.length - 1));
     });
   }
 
@@ -176,6 +194,12 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
 
     _updateFocusNodes(filtered.length, _chNodes, 'chan');
 
+    if (!appState.isLoading && filtered.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tryInitialGridFocus();
+      });
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -192,7 +216,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 appState: appState,
                 settingsFocusNode: _settingsFocusNode,
                 onSettingsDown: _moveFocusFromSettingsToSidebar,
-                onBack: _handleHomeBack,
               ),
               Expanded(
                 child: appState.isLoading
@@ -229,7 +252,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                   selectedIndex: _selectedCategoryIndex,
                                   onSelect: _changeCategory,
                                   onMoveRight: _moveFocusToGrid,
-                                  onBack: _handleHomeBack,
                                 ),
                               ),
                             ),
@@ -255,7 +277,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                                     chNodes: _chNodes,
                                     appState: appState,
                                     categoryName: currentCat,
-                                    onBack: _handleHomeBack,
                                     onFocusIndex: (i) =>
                                         _lastFocusedGridIndex = i,
                                   ),

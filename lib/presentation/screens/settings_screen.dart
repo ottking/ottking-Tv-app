@@ -81,6 +81,13 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
     setState(() => _activeSection = _Section.values[index]);
   }
 
+  void _moveToContentFromNav(int index) {
+    setState(() => _activeSection = _Section.values[index]);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusFirstContent();
+    });
+  }
+
   int _cardCountForSection() {
     switch (_activeSection) {
       case _Section.account:
@@ -131,41 +138,50 @@ class _SettingsScreenState extends State<SettingsScreen> with RouteAware {
           policy: OrderedTraversalPolicy(),
           child: Row(
             children: [
-              SettingsNavSidebar(
-                activeSection: _activeSection.index,
-                firstFocusNode: _firstSidebarNode,
-                onSelect: _selectSection,
-                onBack: _safelyPop,
-                onMoveToContent: _focusFirstContent,
+              FocusTraversalOrder(
+                order: const NumericFocusOrder(1),
+                child: SettingsNavSidebar(
+                  activeSection: _activeSection.index,
+                  firstFocusNode: _firstSidebarNode,
+                  onSelect: _selectSection,
+                  onBack: _safelyPop,
+                  onMoveToContent: _moveToContentFromNav,
+                ),
               ),
               Container(
                 width: 1,
                 color: Colors.white.withOpacity(0.05),
               ),
               Expanded(
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 48,
-                      vertical: 32,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: _buildActiveSection(
-                            appState,
-                            navCallbacks,
-                            _cardFocusNodes,
-                          ),
+                child: FocusTraversalOrder(
+                  order: const NumericFocusOrder(2),
+                  child: SafeArea(
+                    child: FocusTraversalGroup(
+                      policy: WidgetOrderTraversalPolicy(),
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 48,
+                          vertical: 32,
                         ),
-                        const SizedBox(height: 40),
-                        Divider(color: Colors.white.withOpacity(0.05)),
-                        const SizedBox(height: 16),
-                        SettingsStatusFooter(appState: appState),
-                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: _buildActiveSection(
+                                appState,
+                                navCallbacks,
+                                _cardFocusNodes,
+                              ),
+                            ),
+                            const SizedBox(height: 40),
+                            Divider(color: Colors.white.withOpacity(0.05)),
+                            const SizedBox(height: 16),
+                            SettingsStatusFooter(appState: appState),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

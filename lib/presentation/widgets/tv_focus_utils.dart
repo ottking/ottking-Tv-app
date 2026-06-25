@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
-    show KeyEvent, KeyDownEvent, KeyUpEvent, LogicalKeyboardKey;
+    show KeyEvent, KeyDownEvent, LogicalKeyboardKey;
 
 /// TV remote helpers — shared across all screens.
 bool isTvActivateKey(KeyEvent event) {
@@ -12,7 +12,7 @@ bool isTvActivateKey(KeyEvent event) {
 }
 
 bool isTvBackKey(KeyEvent event) {
-  if (event is! KeyDownEvent && event is! KeyUpEvent) return false;
+  if (event is! KeyDownEvent) return false;
   return event.logicalKey == LogicalKeyboardKey.escape ||
       event.logicalKey == LogicalKeyboardKey.goBack;
 }

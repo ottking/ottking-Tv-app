@@ -11,14 +11,12 @@ class HomeTopBar extends StatelessWidget {
   final AppState appState;
   final FocusNode settingsFocusNode;
   final VoidCallback? onSettingsDown;
-  final Future<void> Function()? onBack;
 
   const HomeTopBar({
     super.key,
     required this.appState,
     required this.settingsFocusNode,
     this.onSettingsDown,
-    this.onBack,
   });
 
   @override
@@ -106,7 +104,6 @@ class HomeTopBar extends StatelessWidget {
             focusNode: settingsFocusNode,
             onTap: () => Navigator.pushNamed(context, '/settings'),
             onDown: onSettingsDown,
-            onBack: onBack,
           ),
         ],
       ),
@@ -119,12 +116,10 @@ class _TvSettingsButton extends StatefulWidget {
     required this.focusNode,
     required this.onTap,
     this.onDown,
-    this.onBack,
   });
   final FocusNode focusNode;
   final VoidCallback onTap;
   final VoidCallback? onDown;
-  final Future<void> Function()? onBack;
 
   @override
   State<_TvSettingsButton> createState() => _TvSettingsButtonState();
@@ -141,7 +136,6 @@ class _TvSettingsButtonState extends State<_TvSettingsButton> {
         focusNode: widget.focusNode,
         onFocusChange: (v) => setState(() => _focused = v),
         onActivate: widget.onTap,
-        onBack: widget.onBack == null ? null : () { widget.onBack!(); },
         onKeyEvent: (e) {
           if (e is KeyDownEvent &&
               e.logicalKey == LogicalKeyboardKey.arrowDown) {
